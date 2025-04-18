@@ -1,4 +1,3 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,12 +22,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     console.log("Initializing auth state...");
-    // Set up auth state listener first to avoid missing auth events
+    
+    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log(`Auth state change: ${event}`);
         
-        // Synchronous state updates
+        // Synchronous state updates first
         setSession(session);
         setUser(session?.user || null);
         
@@ -42,13 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
         
         setLoading(false);
-        
-        // Handle navigation
-        if (event === 'SIGNED_IN') {
-          navigate('/');
-        } else if (event === 'SIGNED_OUT') {
-          navigate('/login');
-        }
       }
     );
 
@@ -62,8 +55,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("Initial session found");
           setSession(session);
           setUser(session.user);
-          
-          // Fetch user profile
           await fetchUserProfile(session.user.id);
         } else {
           console.log("No initial session found");
@@ -86,37 +77,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchUserProfile = async (userId: string) => {
     try {
       console.log(`Fetching profile for user ${userId}`);
-      const { data, error } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
       
       if (error) {
-        if (error.code === 'PGRST116') {
-          console.log("No profile found, creating one");
-          // No profile found, create one
-          await createUserProfile(userId);
-        } else {
-          console.error('Error fetching profile:', error);
-        }
+        console.error('Error fetching profile:', error);
+        return;
+      }
+      
+      if (!profile) {
+        console.log("No profile found, creating one");
+        await createUserProfile(userId);
       } else {
-        console.log("Profile found:", data);
-        setProfile(data);
+        console.log("Profile found:", profile);
+        setProfile(profile);
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
     }
   };
 
-  // Create a new profile if one doesn't exist
+  // Create a new profile
   const createUserProfile = async (userId: string) => {
     try {
       console.log(`Creating profile for user ${userId}`);
-      // Get user email from auth
       const { data: userData } = await supabase.auth.getUser();
       const email = userData?.user?.email || '';
-      // Generate a username from the email
       const username = email.split('@')[0];
       
       const { data, error } = await supabase
@@ -125,8 +114,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: userId,
           username,
           games: [],
-          avatar_url: null,
-          description: '',
         })
         .select()
         .single();
