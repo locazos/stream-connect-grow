@@ -14,7 +14,14 @@ import Matches from "./pages/Matches";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+  },
+});
 
 // Protected route wrapper
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
@@ -24,8 +31,9 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
     // Render a loading state while checking authentication
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-primary">
-          <div className="h-8 w-8 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+          <p className="text-sm text-muted-foreground">Cargando...</p>
         </div>
       </div>
     );
@@ -47,8 +55,9 @@ const PublicRoute = ({ children }: { children: JSX.Element }) => {
     // Render a loading state while checking authentication
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-pulse text-primary">
-          <div className="h-8 w-8 rounded-full border-2 border-current border-t-transparent animate-spin"></div>
+        <div className="flex flex-col items-center gap-2">
+          <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+          <p className="text-sm text-muted-foreground">Cargando...</p>
         </div>
       </div>
     );

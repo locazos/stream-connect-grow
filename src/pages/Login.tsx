@@ -29,13 +29,21 @@ const Login = () => {
     setLoading(true);
     
     try {
+      console.log("Intentando iniciar sesión...");
       const { error } = await signIn(email, password);
       
       if (error) {
+        console.error("Error de inicio de sesión:", error);
         toast({
           title: "Error al iniciar sesión",
           description: error.message,
           variant: "destructive",
+        });
+      } else {
+        console.log("Inicio de sesión exitoso");
+        toast({
+          title: "Bienvenido de nuevo",
+          description: "Has iniciado sesión correctamente",
         });
       }
     } catch (error) {
