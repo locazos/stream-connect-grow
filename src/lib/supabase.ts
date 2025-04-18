@@ -2,9 +2,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 
-// These are public values, safe to be in the client
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Use direct values since environment variables aren't available
+const supabaseUrl = "https://vafynmudxzjojvuzaeoq.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhZnlubXVkeHpqb2p2dXphZW9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5NzAzMTksImV4cCI6MjA2MDU0NjMxOX0._GTTgiA5wbougH2h-9AIS2o1NFPLKMr6lsBjzZONLmc";
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
 
