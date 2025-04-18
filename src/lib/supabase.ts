@@ -2,11 +2,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { Database } from './database.types';
 
-// Use direct values since environment variables aren't available
-const supabaseUrl = "https://vafynmudxzjojvuzaeoq.supabase.co";
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZhZnlubXVkeHpqb2p2dXphZW9xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQ5NzAzMTksImV4cCI6MjA2MDU0NjMxOX0._GTTgiA5wbougH2h-9AIS2o1NFPLKMr6lsBjzZONLmc";
+// Importar el cliente de Supabase desde el archivo generado automáticamente
+import { supabase } from '@/integrations/supabase/client';
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+// Exportar el cliente de Supabase para ser utilizado en toda la aplicación
+export { supabase };
 
 // Helper function to test if a swipe creates a match
 export async function testForMatch(swiperId: string, targetId: string): Promise<boolean> {
@@ -60,4 +60,3 @@ export async function createMatch(userId: string, targetId: string): Promise<boo
     return false;
   }
 }
-
