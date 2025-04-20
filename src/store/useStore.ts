@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
@@ -127,6 +128,8 @@ const useStore = create<AppState>()(
           set({ isLoading: true });
           
           try {
+            console.log('Loading matches for user:', user.id);
+            
             // Get all matches where the current user is either user_a or user_b
             const { data: matchesData, error: matchesError } = await supabase
               .from('matches')
@@ -136,6 +139,13 @@ const useStore = create<AppState>()(
             if (matchesError) {
               console.error('Error loading matches:', matchesError);
               set({ error: matchesError.message, isLoading: false });
+              return;
+            }
+            
+            console.log('Matches found:', matchesData);
+            
+            if (!matchesData || matchesData.length === 0) {
+              set({ matches: [], isLoading: false });
               return;
             }
             
@@ -162,6 +172,7 @@ const useStore = create<AppState>()(
             // Filter out matches with null profiles
             const validMatches = matchesWithProfiles.filter(match => match.profile !== null) as Match[];
             
+            console.log('Valid matches with profiles:', validMatches);
             set({ matches: validMatches, isLoading: false });
             
           } catch (error) {

@@ -43,17 +43,66 @@ export async function createMatch(userId: string, targetId: string): Promise<boo
   console.log(`Creating match between ${userId} and ${targetId}`);
   
   try {
-    const { data, error } = await supabase.rpc('create_match', {
-      user_1: userId,
-      user_2: targetId,
-    });
+    // Añadir más logs para solucionar el problema
+    console.log('Creating match with parameters:', { user_1: userId, user_2: targetId });
     
-    if (error) {
-      console.error('Error creating match:', error);
+    // Verificar si el match ya existe antes de intentar crearlo
+    const { data: existingMatch, error: checkError } = await supabase
+      .from('matches')
+      .select('*')
+      .or(`and(user_a.eq.${userId},user_b.eq.${targetId}),and(user_a.eq.${targetId},user_b.eq.${userId})`)
+      .maybeSingle();
+    
+    if (checkError) {
+      console.error('Error checking existing match:', checkError);
       return false;
     }
     
-    console.log('Match created successfully', data);
+    if (existingMatch) {
+      console.log('Match already exists:', existingMatch);
+      return true; // El match ya existe, así que consideramos que se creó correctamente
+    }
+    
+    // Intentar crear el match directamente sin usar RPC
+    // Esto nos puede dar más información sobre posibles errores
+    let userA, userB;
+    if (userId < targetId) {
+      userA = userId;
+      userB = targetId;
+    } else {
+      userA = targetId;
+      userB = userId;
+    }
+    
+    const { data: directData, error: directError } = await supabase
+      .from('matches')
+      .insert({
+        user_a: userA,
+        user_b: userB
+      })
+      .select()
+      .single();
+    
+    if (directError) {
+      console.error('Error creating match directly:', directError);
+      
+      // Intentar con RPC como fallback
+      console.log('Trying with RPC method as fallback');
+      const { data, error } = await supabase.rpc('create_match', {
+        user_1: userId,
+        user_2: targetId,
+      });
+      
+      if (error) {
+        console.error('Error creating match with RPC:', error);
+        return false;
+      }
+      
+      console.log('Match created successfully with RPC:', data);
+      return true;
+    }
+    
+    console.log('Match created successfully directly:', directData);
     return true;
   } catch (error) {
     console.error('Error in createMatch:', error);
