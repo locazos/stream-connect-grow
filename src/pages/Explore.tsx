@@ -142,7 +142,7 @@ if (checkError) {
 
 console.log("🧪 Swipes recíprocos encontrados:", reciprocalSwipes);
 
-const reciprocalSwipe = reciprocalSwipes?.[0];
+const reciprocalSwipe = reciprocalSwipes && reciprocalSwipes.length > 0 ? reciprocalSwipes[0] : null;
 
 if (reciprocalSwipe) {
   console.log("🤝 Reciprocidad detectada. Creando match...");
