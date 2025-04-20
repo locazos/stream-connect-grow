@@ -121,7 +121,12 @@ if (swipeError) {
 
 console.log("✅ Swipe guardado:", currentUserId, "→", targetId);
 
-// 2. Comprobar reciprocidad robusta
+// 2. Logs para depurar reciprocidad
+console.log("🟢 currentUserId:", currentUserId);
+console.log("🟣 targetId:", targetId);
+console.log("🔁 Buscando reciprocidad: ¿ha hecho", targetId, "swipe a", currentUserId, "?");
+
+// 3. Comprobar reciprocidad
 const { data: reciprocalSwipes, error: checkError } = await supabase
   .from("swipes")
   .select("*")
@@ -157,12 +162,13 @@ if (reciprocalSwipe) {
     });
   }
 } else {
-  console.log("🕐 No hay reciprocidad aún.");
+  console.log("⏳ No hay reciprocidad aún.");
   toast({
     title: "✅ Solicitud enviada",
     description: `Has conectado con ${target.username}`,
   });
 }
+
 
   
     // Pasar al siguiente
