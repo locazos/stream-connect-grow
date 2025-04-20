@@ -145,8 +145,8 @@ if (isReciprocal) {
   console.log("🤝 Reciprocidad detectada. Creando match...");
 
   const { data: matchResult, error: matchError } = await supabase.rpc("create_match", {
-    user_1: currentUserId,
-    user_2: targetId,
+    input_user_1: currentUserId,
+  input_user_2: targetId,
   });
 
   if (matchError) {
