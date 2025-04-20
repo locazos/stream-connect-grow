@@ -120,35 +120,29 @@ if (swipeError) {
 }
 
 console.log("✅ Swipe guardado:", currentUserId, "→", targetId);
-
-// 2. Logs para depurar reciprocidad
 console.log("🟢 currentUserId:", currentUserId);
 console.log("🟣 targetId:", targetId);
-console.log("🔁 Buscando reciprocidad: ¿ha hecho", targetId, "swipe a", currentUserId, "?");
+console.log(`🧭 Buscando reciprocidad: ¿ha hecho ${targetId} swipe a ${currentUserId} ?`);
 
-// 3. Comprobar reciprocidad
+// 2. Comprobar reciprocidad con query más robusta
 const { data: reciprocalSwipes, error: checkError } = await supabase
   .from("swipes")
   .select("*")
   .eq("swiper_id", targetId)
   .eq("target_id", currentUserId)
-  .eq("direction", "right")
-  .order("created_at", { ascending: false });
+  .eq("direction", "right");
+
+console.log("🖊️ Swipes recíprocos encontrados:", reciprocalSwipes);
 
 if (checkError) {
   console.error("❌ Error comprobando reciprocidad:", checkError.message);
   return;
 }
 
-console.log("🧪 Swipes recíprocos encontrados:", reciprocalSwipes);
+const isReciprocal = reciprocalSwipes && reciprocalSwipes.length > 0;
 
-const reciprocalSwipe = reciprocalSwipes && reciprocalSwipes.length > 0 ? reciprocalSwipes[0] : null;
-
-if (reciprocalSwipe) {
+if (isReciprocal) {
   console.log("🤝 Reciprocidad detectada. Creando match...");
-  console.log("🧪 Ejecutando test RPC create_match...");
-  console.log("🟢 currentUserId:", currentUserId);
-  console.log("🟣 targetId:", targetId);
 
   const { data: matchResult, error: matchError } = await supabase.rpc("create_match", {
     user_1: currentUserId,
@@ -156,20 +150,27 @@ if (reciprocalSwipe) {
   });
 
   if (matchError) {
-    console.error("❌ Error en test RPC create_match:", matchError.message);
+    console.error("❌ Error creando match:", matchError.message);
     toast({
       title: "Error creando match",
       description: matchError.message,
       variant: "destructive",
     });
   } else {
-    console.log("✅ Resultado del test RPC create_match:", matchResult);
+    console.log("🎉 Match creado correctamente:", matchResult);
     toast({
       title: "🎮 ¡Es un match!",
       description: `Has hecho match con ${target.username}`,
     });
   }
+} else {
+  console.log("🕐 No hay reciprocidad aún.");
+  toast({
+    title: "✅ Solicitud enviada",
+    description: `Has conectado con ${target.username}`,
+  });
 }
+
 
 
 
