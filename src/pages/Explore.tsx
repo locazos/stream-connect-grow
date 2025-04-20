@@ -146,6 +146,9 @@ const reciprocalSwipe = reciprocalSwipes && reciprocalSwipes.length > 0 ? recipr
 
 if (reciprocalSwipe) {
   console.log("🤝 Reciprocidad detectada. Creando match...");
+  console.log("🧪 Ejecutando test RPC create_match...");
+  console.log("🟢 currentUserId:", currentUserId);
+  console.log("🟣 targetId:", targetId);
 
   const { data: matchResult, error: matchError } = await supabase.rpc("create_match", {
     user_1: currentUserId,
@@ -153,21 +156,21 @@ if (reciprocalSwipe) {
   });
 
   if (matchError) {
-    console.error("❌ Error creando match:", matchError.message);
+    console.error("❌ Error en test RPC create_match:", matchError.message);
+    toast({
+      title: "Error creando match",
+      description: matchError.message,
+      variant: "destructive",
+    });
   } else {
-    console.log("🎉 Match creado:", matchResult);
+    console.log("✅ Resultado del test RPC create_match:", matchResult);
     toast({
       title: "🎮 ¡Es un match!",
       description: `Has hecho match con ${target.username}`,
     });
   }
-} else {
-  console.log("⏳ No hay reciprocidad aún.");
-  toast({
-    title: "✅ Solicitud enviada",
-    description: `Has conectado con ${target.username}`,
-  });
 }
+
 
 
   
