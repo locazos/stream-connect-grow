@@ -43,14 +43,24 @@ export async function createMatch(userId: string, targetId: string): Promise<boo
   console.log(`Creating match between ${userId} and ${targetId}`);
   
   try {
-    // Añadir más logs para solucionar el problema
-    console.log('Creating match with parameters:', { user_1: userId, user_2: targetId });
+    // Determine the correct order for user_a and user_b (smaller UUID first)
+    let userA: string, userB: string;
+    if (userId < targetId) {
+      userA = userId;
+      userB = targetId;
+    } else {
+      userA = targetId;
+      userB = userId;
+    }
     
-    // Verificar si el match ya existe antes de intentar crearlo
+    console.log('Creating match with ordered parameters:', { user_a: userA, user_b: userB });
+    
+    // First, check if the match already exists using parameterized query
     const { data: existingMatch, error: checkError } = await supabase
       .from('matches')
       .select('*')
-      .or(`and(user_a.eq.${userId},user_b.eq.${targetId}),and(user_a.eq.${targetId},user_b.eq.${userId})`)
+      .eq('user_a', userA)
+      .eq('user_b', userB)
       .maybeSingle();
     
     if (checkError) {
@@ -60,21 +70,12 @@ export async function createMatch(userId: string, targetId: string): Promise<boo
     
     if (existingMatch) {
       console.log('Match already exists:', existingMatch);
-      return true; // El match ya existe, así que consideramos que se creó correctamente
+      return true;
     }
     
-    // Intentar crear el match directamente sin usar RPC
-    // Esto nos puede dar más información sobre posibles errores
-    let userA, userB;
-    if (userId < targetId) {
-      userA = userId;
-      userB = targetId;
-    } else {
-      userA = targetId;
-      userB = userId;
-    }
-    
-    const { data: directData, error: directError } = await supabase
+    // Try to insert the match directly
+    console.log('Inserting new match with:', { user_a: userA, user_b: userB });
+    const { data: insertedMatch, error: insertError } = await supabase
       .from('matches')
       .insert({
         user_a: userA,
@@ -83,26 +84,44 @@ export async function createMatch(userId: string, targetId: string): Promise<boo
       .select()
       .single();
     
-    if (directError) {
-      console.error('Error creating match directly:', directError);
+    if (insertError) {
+      console.error('Error creating match directly:', insertError);
       
-      // Intentar con RPC como fallback
-      console.log('Trying with RPC method as fallback');
-      const { data, error } = await supabase.rpc('create_match', {
+      // If direct insertion fails, try using the RPC function as fallback
+      console.log('Direct insertion failed, trying RPC method');
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('create_match', {
         user_1: userId,
-        user_2: targetId,
+        user_2: targetId
       });
       
-      if (error) {
-        console.error('Error creating match with RPC:', error);
-        return false;
+      if (rpcError) {
+        console.error('Error creating match with RPC:', rpcError);
+        throw new Error(`Failed to create match: ${rpcError.message}`);
       }
       
-      console.log('Match created successfully with RPC:', data);
+      console.log('Match created successfully with RPC:', rpcResult);
       return true;
     }
     
-    console.log('Match created successfully directly:', directData);
+    console.log('Match created successfully directly:', insertedMatch);
+    
+    // Double-check that the match was actually created
+    const { data: verifyMatch, error: verifyError } = await supabase
+      .from('matches')
+      .select('*')
+      .eq('user_a', userA)
+      .eq('user_b', userB)
+      .maybeSingle();
+      
+    if (verifyError) {
+      console.error('Error verifying match creation:', verifyError);
+    } else if (!verifyMatch) {
+      console.error('Match was not found after creation attempt!');
+      return false;
+    } else {
+      console.log('Match creation verified:', verifyMatch);
+    }
+    
     return true;
   } catch (error) {
     console.error('Error in createMatch:', error);

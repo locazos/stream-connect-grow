@@ -4,6 +4,7 @@ import { devtools, persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
 import { testForMatch, createMatch } from '@/lib/supabase';
 import type { Database } from '@/lib/database.types';
+import { toast } from '@/components/ui/use-toast';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type Match = Database['public']['Tables']['matches']['Row'] & { profile: Profile };
@@ -73,7 +74,7 @@ const useStore = create<AppState>()(
           }
           
           const targetProfile = profiles[currentProfileIndex];
-          console.log(`Swiping ${direction} on ${targetProfile.username}`);
+          console.log(`Swiping ${direction} on ${targetProfile.username} (ID: ${targetProfile.id})`);
           
           try {
             // Add the swipe to the database
@@ -87,7 +88,11 @@ const useStore = create<AppState>()(
               
             if (error) {
               console.error('Error creating swipe:', error);
-              set({ error: error.message });
+              toast({
+                title: "Error",
+                description: "No se pudo registrar tu swipe. Intenta de nuevo.",
+                variant: "destructive"
+              });
               return;
             }
             
@@ -97,18 +102,32 @@ const useStore = create<AppState>()(
               const isMatch = await testForMatch(user.id, targetProfile.id);
               
               if (isMatch) {
-                console.log('Match found! Creating match...');
+                console.log('Match found! Creating match between', user.id, 'and', targetProfile.id);
                 const matchCreated = await createMatch(user.id, targetProfile.id);
+                
+                console.log('Match creation result:', matchCreated);
                 
                 if (matchCreated) {
                   console.log('Match created successfully!');
+                  toast({
+                    title: "¡Match!",
+                    description: `Hiciste match con ${targetProfile.username}`,
+                  });
+                  
                   set({ 
                     showMatchModal: true,
                     matchedProfile: targetProfile
                   });
                   
                   // Refresh matches
-                  get().loadMatches();
+                  await get().loadMatches();
+                } else {
+                  console.error('Failed to create match');
+                  toast({
+                    title: "Error",
+                    description: "Hubo un problema al crear el match. Intenta de nuevo.",
+                    variant: "destructive"
+                  });
                 }
               }
             }
@@ -118,14 +137,18 @@ const useStore = create<AppState>()(
             
           } catch (error) {
             console.error('Error in swipe function:', error);
-            set({ error: 'An unexpected error occurred' });
+            toast({
+              title: "Error",
+              description: "Ocurrió un error inesperado. Intenta de nuevo.",
+              variant: "destructive"
+            });
           }
         },
         loadMatches: async () => {
           const { user } = get();
           if (!user) return;
           
-          set({ isLoading: true });
+          set({ isLoading: true, error: null });
           
           try {
             console.log('Loading matches for user:', user.id);
