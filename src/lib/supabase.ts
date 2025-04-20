@@ -55,57 +55,78 @@ export async function createMatch(userId: string, targetId: string): Promise<boo
     
     console.log('Creating match with ordered parameters:', { user_a: userA, user_b: userB });
     
-    // First, check if the match already exists using parameterized query
-    const { data: existingMatch, error: checkError } = await supabase
-      .from('matches')
-      .select('*')
-      .eq('user_a', userA)
-      .eq('user_b', userB)
-      .maybeSingle();
+    // First, try the RPC method to create the match
+    console.log('Trying to create match with RPC method first');
+    const { data: rpcResult, error: rpcError } = await supabase.rpc('create_match', {
+      user_1: userId,
+      user_2: targetId
+    });
     
-    if (checkError) {
-      console.error('Error checking existing match:', checkError);
-      return false;
-    }
-    
-    if (existingMatch) {
-      console.log('Match already exists:', existingMatch);
-      return true;
-    }
-    
-    // Try to insert the match directly
-    console.log('Inserting new match with:', { user_a: userA, user_b: userB });
-    const { data: insertedMatch, error: insertError } = await supabase
-      .from('matches')
-      .insert({
-        user_a: userA,
-        user_b: userB
-      })
-      .select()
-      .single();
-    
-    if (insertError) {
-      console.error('Error creating match directly:', insertError);
+    if (rpcError) {
+      console.error('Error creating match with RPC:', rpcError);
       
-      // If direct insertion fails, try using the RPC function as fallback
-      console.log('Direct insertion failed, trying RPC method');
-      const { data: rpcResult, error: rpcError } = await supabase.rpc('create_match', {
-        user_1: userId,
-        user_2: targetId
-      });
+      // If RPC method fails, try direct insertion
+      console.log('RPC method failed, trying direct insertion');
       
-      if (rpcError) {
-        console.error('Error creating match with RPC:', rpcError);
-        throw new Error(`Failed to create match: ${rpcError.message}`);
+      // First, check if the match already exists
+      const { data: existingMatch, error: checkError } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('user_a', userA)
+        .eq('user_b', userB)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error('Error checking existing match:', checkError);
+        return false;
       }
       
-      console.log('Match created successfully with RPC:', rpcResult);
+      if (existingMatch) {
+        console.log('Match already exists:', existingMatch);
+        return true;
+      }
+      
+      // Try to insert the match directly
+      console.log('Inserting new match with:', { user_a: userA, user_b: userB });
+      const { data: insertedMatch, error: insertError } = await supabase
+        .from('matches')
+        .insert({
+          user_a: userA,
+          user_b: userB
+        })
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error('Error creating match directly:', insertError);
+        return false;
+      }
+      
+      console.log('Match created successfully directly:', insertedMatch);
+      
+      // Double-check that the match was actually created
+      const { data: verifyMatch, error: verifyError } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('user_a', userA)
+        .eq('user_b', userB)
+        .maybeSingle();
+        
+      if (verifyError) {
+        console.error('Error verifying match creation:', verifyError);
+      } else if (!verifyMatch) {
+        console.error('Match was not found after creation attempt!');
+        return false;
+      } else {
+        console.log('Match creation verified:', verifyMatch);
+      }
+      
       return true;
     }
     
-    console.log('Match created successfully directly:', insertedMatch);
+    console.log('Match created successfully with RPC:', rpcResult);
     
-    // Double-check that the match was actually created
+    // Verify the match was created with RPC method
     const { data: verifyMatch, error: verifyError } = await supabase
       .from('matches')
       .select('*')
@@ -114,12 +135,29 @@ export async function createMatch(userId: string, targetId: string): Promise<boo
       .maybeSingle();
       
     if (verifyError) {
-      console.error('Error verifying match creation:', verifyError);
+      console.error('Error verifying match creation after RPC:', verifyError);
     } else if (!verifyMatch) {
-      console.error('Match was not found after creation attempt!');
-      return false;
+      console.error('Match was not found after RPC creation!');
+      
+      // Fallback: Try direct insertion if RPC succeeded but match not found
+      console.log('Match not found after RPC, trying direct insertion as fallback');
+      const { data: insertedMatch, error: insertError } = await supabase
+        .from('matches')
+        .insert({
+          user_a: userA,
+          user_b: userB
+        })
+        .select()
+        .single();
+      
+      if (insertError) {
+        console.error('Error in fallback direct insertion:', insertError);
+        return false;
+      }
+      
+      console.log('Match created with fallback direct insertion:', insertedMatch);
     } else {
-      console.log('Match creation verified:', verifyMatch);
+      console.log('Match creation with RPC verified:', verifyMatch);
     }
     
     return true;
@@ -128,3 +166,4 @@ export async function createMatch(userId: string, targetId: string): Promise<boo
     return false;
   }
 }
+

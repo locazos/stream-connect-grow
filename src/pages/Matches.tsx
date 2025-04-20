@@ -5,19 +5,57 @@ import { MobileLayout } from "@/components/MobileLayout";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import useStore from "@/store/useStore";
 
 const Matches = () => {
   const { matches, loadMatches, isLoading, error } = useStore();
+  const { toast } = useToast();
   
   useEffect(() => {
-    loadMatches();
-  }, [loadMatches]);
+    console.log('Matches component mounted, loading matches...');
+    loadMatches().catch(err => {
+      console.error('Error loading matches in component:', err);
+      toast({
+        title: "Error",
+        description: "No se pudieron cargar tus matches. Intenta recargar la página.",
+        variant: "destructive"
+      });
+    });
+  }, [loadMatches, toast]);
+  
+  const handleRefresh = () => {
+    console.log('Manually refreshing matches...');
+    loadMatches().then(() => {
+      toast({
+        title: "Actualizado",
+        description: "Lista de matches actualizada",
+      });
+    }).catch(err => {
+      console.error('Error refreshing matches:', err);
+      toast({
+        title: "Error",
+        description: "No se pudieron actualizar tus matches. Intenta de nuevo.",
+        variant: "destructive"
+      });
+    });
+  };
   
   return (
     <MobileLayout>
       <div className="p-4">
-        <h1 className="text-2xl font-bold mb-6">Tus Matches</h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">Tus Matches</h1>
+          <Button 
+            size="sm" 
+            variant="outline" 
+            onClick={handleRefresh}
+            disabled={isLoading}
+          >
+            {isLoading ? "Cargando..." : "Actualizar"}
+          </Button>
+        </div>
         
         {isLoading ? (
           <div className="space-y-4">

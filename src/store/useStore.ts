@@ -70,6 +70,7 @@ const useStore = create<AppState>()(
           const { user, profiles, currentProfileIndex } = get();
           
           if (!user || profiles.length === 0 || currentProfileIndex >= profiles.length) {
+            console.error('Cannot swipe: invalid user or profile state');
             return;
           }
           
@@ -78,7 +79,7 @@ const useStore = create<AppState>()(
           
           try {
             // Add the swipe to the database
-            const { error } = await supabase
+            const { error: swipeError } = await supabase
               .from('swipes')
               .insert({
                 swiper_id: user.id,
@@ -86,8 +87,8 @@ const useStore = create<AppState>()(
                 direction
               });
               
-            if (error) {
-              console.error('Error creating swipe:', error);
+            if (swipeError) {
+              console.error('Error creating swipe:', swipeError);
               toast({
                 title: "Error",
                 description: "No se pudo registrar tu swipe. Intenta de nuevo.",
@@ -96,19 +97,24 @@ const useStore = create<AppState>()(
               return;
             }
             
+            console.log('Swipe successfully recorded');
+            
             // If it was a right swipe, check for a match
             if (direction === 'right') {
-              console.log('Checking for match...');
+              console.log('Right swipe detected, checking for match...');
               const isMatch = await testForMatch(user.id, targetProfile.id);
               
               if (isMatch) {
-                console.log('Match found! Creating match between', user.id, 'and', targetProfile.id);
+                console.log('Match found! Creating match record between', user.id, 'and', targetProfile.id);
                 const matchCreated = await createMatch(user.id, targetProfile.id);
                 
                 console.log('Match creation result:', matchCreated);
                 
                 if (matchCreated) {
                   console.log('Match created successfully!');
+                  // Immediately try to load the new match to verify it exists
+                  await get().loadMatches();
+                  
                   toast({
                     title: "¡Match!",
                     description: `Hiciste match con ${targetProfile.username}`,
@@ -118,9 +124,6 @@ const useStore = create<AppState>()(
                     showMatchModal: true,
                     matchedProfile: targetProfile
                   });
-                  
-                  // Refresh matches
-                  await get().loadMatches();
                 } else {
                   console.error('Failed to create match');
                   toast({
@@ -129,6 +132,8 @@ const useStore = create<AppState>()(
                     variant: "destructive"
                   });
                 }
+              } else {
+                console.log('No match found yet');
               }
             }
             
@@ -146,14 +151,17 @@ const useStore = create<AppState>()(
         },
         loadMatches: async () => {
           const { user } = get();
-          if (!user) return;
+          if (!user) {
+            console.error('Cannot load matches: no user logged in');
+            return;
+          }
           
           set({ isLoading: true, error: null });
           
           try {
             console.log('Loading matches for user:', user.id);
             
-            // Get all matches where the current user is either user_a or user_b
+            // Direct query with proper formatting for the OR condition
             const { data: matchesData, error: matchesError } = await supabase
               .from('matches')
               .select('*')
@@ -168,6 +176,7 @@ const useStore = create<AppState>()(
             console.log('Matches found:', matchesData);
             
             if (!matchesData || matchesData.length === 0) {
+              console.log('No matches found for user:', user.id);
               set({ matches: [], isLoading: false });
               return;
             }
@@ -176,6 +185,7 @@ const useStore = create<AppState>()(
             const matchesWithProfiles = await Promise.all(
               matchesData.map(async (match) => {
                 const otherUserId = match.user_a === user.id ? match.user_b : match.user_a;
+                console.log(`Loading profile for match with user ID: ${otherUserId}`);
                 
                 const { data: profileData, error: profileError } = await supabase
                   .from('profiles')
@@ -188,6 +198,7 @@ const useStore = create<AppState>()(
                   return { ...match, profile: null };
                 }
                 
+                console.log(`Profile found for match:`, profileData);
                 return { ...match, profile: profileData };
               })
             );
