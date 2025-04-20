@@ -1,7 +1,7 @@
-
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
+import { testForMatch, createMatch } from '@/lib/supabase';
 import type { Database } from '@/lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -92,32 +92,15 @@ const useStore = create<AppState>()(
             
             // If it was a right swipe, check for a match
             if (direction === 'right') {
-              // Check if the target has already swiped right on the current user
-              const { data, error: matchError } = await supabase
-                .from('swipes')
-                .select('*')
-                .eq('swiper_id', targetProfile.id)
-                .eq('target_id', user.id)
-                .eq('direction', 'right')
-                .single();
+              console.log('Checking for match...');
+              const isMatch = await testForMatch(user.id, targetProfile.id);
               
-              if (matchError && matchError.code !== 'PGRST116') {
-                // PGRST116 is the error code for no rows returned
-                console.error('Error checking for match:', matchError);
-              }
-              
-              // If we found a row, it means the other user already swiped right on us
-              if (data) {
-                // Create a match
-                const { error: createMatchError } = await supabase.rpc('create_match', {
-                  user_1: user.id,
-                  user_2: targetProfile.id,
-                });
+              if (isMatch) {
+                console.log('Match found! Creating match...');
+                const matchCreated = await createMatch(user.id, targetProfile.id);
                 
-                if (createMatchError) {
-                  console.error('Error creating match:', createMatchError);
-                } else {
-                  console.log('Match created!');
+                if (matchCreated) {
+                  console.log('Match created successfully!');
                   set({ 
                     showMatchModal: true,
                     matchedProfile: targetProfile
