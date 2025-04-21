@@ -15,6 +15,29 @@ import { supabase } from "@/lib/supabase";
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { profile, setProfile } = useStore();
+  import { useEffect } from "react";
+
+useEffect(() => {
+  const fetchProfile = async () => {
+    if (!user || profile) return;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (error) {
+      console.error("❌ Error loading profile:", error.message);
+      return;
+    }
+
+    setProfile(data);
+  };
+
+  fetchProfile();
+}, [user, profile, setProfile]);
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     username: profile?.username || "",
@@ -122,8 +145,16 @@ const Profile = () => {
     await signOut();
   };
   
-  if (!profile) return null;
-  
+  if (!profile) {
+    return (
+      <MobileLayout>
+        <div className="flex flex-col items-center justify-center h-screen text-white">
+          <p>📄 Cargando perfil...</p>
+        </div>
+      </MobileLayout>
+    );
+  }
+    
   return (
     <MobileLayout>
       <div className="p-4 max-w-md mx-auto">
