@@ -11,27 +11,23 @@ export const createUserProfile = async (user: User): Promise<Profile | null> => 
     const avatarUrl = userMetadata?.avatar_url || null;
     const twitchId = userMetadata?.provider_id || null;
 
-    console.log("🆕 Intentando crear perfil con:", {
+    console.log('⚡ Ejecutando createUserProfile con ID:', user.id); // <-- AQUÍ ESTÁ EL PASO 1
+
+    const newProfile = {
       id: user.id,
       username,
-      avatarUrl,
-      twitchId,
-      created_at: new Date().toISOString()
-    });
+      avatar_url: avatarUrl,
+      description: '',
+      games: [] as string[],
+      twitch_id: twitchId,
+      created_at: new Date().toISOString(),
+    };
+
+    console.log('📥 Insertando perfil con:', newProfile);
 
     const { data, error } = await supabase
       .from('profiles')
-      .insert([
-        {
-          id: user.id,
-          username,
-          avatar_url: avatarUrl,
-          description: '',
-          games: [],
-          twitch_id: twitchId,
-          created_at: new Date().toISOString(),
-        }
-      ])
+      .insert([newProfile])
       .select()
       .single();
 
@@ -40,31 +36,10 @@ export const createUserProfile = async (user: User): Promise<Profile | null> => 
       return null;
     }
 
-    console.log("✅ Perfil creado correctamente:", data);
+    console.log('✅ Perfil creado correctamente:', data);
     return data;
   } catch (error) {
     console.error('❌ Error inesperado en createUserProfile:', error);
-    return null;
-  }
-};
-
-export const fetchUserProfile = async (userId: string): Promise<Profile | null> => {
-  try {
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-
-    console.log('🔍 fetchUserProfile query result:', profile, error);
-    if (error) {
-      console.error('Error fetching profile:', error);
-      return null;
-    }
-
-    return profile;
-  } catch (error) {
-    console.error('Error in fetchUserProfile:', error);
     return null;
   }
 };
