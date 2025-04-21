@@ -120,7 +120,7 @@ export type Database = {
     }
     Functions: {
       create_match: {
-        Args: { user_1: string; user_2: string }
+        Args: { input_user_1: string; input_user_2: string }
         Returns: boolean
       }
     }

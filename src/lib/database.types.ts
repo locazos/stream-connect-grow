@@ -19,6 +19,7 @@ export interface Database {
           description: string | null
           created_at: string
           updated_at: string | null
+          twitch_id: string | null
         }
         Insert: {
           id: string
@@ -28,6 +29,7 @@ export interface Database {
           description?: string | null
           created_at?: string
           updated_at?: string | null
+          twitch_id?: string | null
         }
         Update: {
           id?: string
@@ -37,6 +39,7 @@ export interface Database {
           description?: string | null
           created_at?: string
           updated_at?: string | null
+          twitch_id?: string | null
         }
       }
       swipes: {
@@ -100,4 +103,3 @@ export interface Database {
     }
   }
 }
-

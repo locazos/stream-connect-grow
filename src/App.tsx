@@ -1,8 +1,9 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 
 // Pages
@@ -11,6 +12,7 @@ import Register from "./pages/Register";
 import Explore from "./pages/Explore";
 import Matches from "./pages/Matches";
 import Profile from "./pages/Profile";
+import SetupProfile from "./pages/SetupProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -22,9 +24,10 @@ const queryClient = new QueryClient({
   },
 });
 
-// Protected route wrapper
+// Protected route wrapper that also checks for profile completion
 const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
-  const { user, loading } = useAuth();
+  const { user, profile, loading } = useAuth();
+  const location = useLocation();
   
   if (loading) {
     // Render a loading state while checking authentication
@@ -41,6 +44,15 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
   if (!user) {
     // Redirect to login if not authenticated
     return <Navigate to="/login" replace />;
+  }
+  
+  // If profile is incomplete and user is not on SetupProfile page, redirect to it
+  if (
+    profile && 
+    (!profile.description || !profile.games || profile.games.length === 0) && 
+    location.pathname !== "/setup-profile"
+  ) {
+    return <Navigate to="/setup-profile" replace />;
   }
   
   return children;
@@ -95,6 +107,16 @@ function App() {
                   <PublicRoute>
                     <Register />
                   </PublicRoute>
+                } 
+              />
+              
+              {/* Onboarding route - special protection */}
+              <Route 
+                path="/setup-profile" 
+                element={
+                  <ProtectedRoute>
+                    <SetupProfile />
+                  </ProtectedRoute>
                 } 
               />
               

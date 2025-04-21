@@ -1,3 +1,4 @@
+
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,8 +8,8 @@ import { useNavigate } from 'react-router-dom';
 interface AuthContextType {
   session: Session | null;
   user: User | null;
-  signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  profile: any;
+  signInWithTwitch: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   loading: boolean;
 }
@@ -17,7 +18,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
-  const { setSession, setUser, setProfile } = useStore();
+  const { session, user, profile, setSession, setUser, setProfile } = useStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -100,19 +101,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Create a new profile
+  // Create a new profile from Twitch metadata
   const createUserProfile = async (userId: string) => {
     try {
       console.log(`Creating profile for user ${userId}`);
       const { data: userData } = await supabase.auth.getUser();
-      const email = userData?.user?.email || '';
-      const username = email.split('@')[0];
+      
+      if (!userData?.user) {
+        console.error('No user data available');
+        return;
+      }
+      
+      const user = userData.user;
+      const userMetadata = user.user_metadata;
+      
+      console.log('User metadata:', userMetadata);
+      
+      // Extract Twitch data from user metadata
+      const username = userMetadata?.full_name || userMetadata?.preferred_username || 'streamer';
+      const avatarUrl = userMetadata?.avatar_url || null;
       
       const { data, error } = await supabase
         .from('profiles')
         .insert({
           id: userId,
           username,
+          avatar_url: avatarUrl,
+          twitch_id: userMetadata?.provider_id || null,
           games: [],
         })
         .select()
@@ -129,32 +144,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signUp = async (email: string, password: string) => {
+  // Sign in with Twitch
+  const signInWithTwitch = async () => {
     try {
-      console.log(`Signing up user with email ${email}`);
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
+      console.log('Signing in with Twitch...');
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'twitch',
+        options: {
+          redirectTo: `${window.location.origin}/login`,
+        },
       });
       
       return { error };
     } catch (error) {
-      console.error('Error in signUp:', error);
-      return { error: error as Error };
-    }
-  };
-
-  const signIn = async (email: string, password: string) => {
-    try {
-      console.log(`Signing in user with email ${email}`);
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      return { error };
-    } catch (error) {
-      console.error('Error in signIn:', error);
+      console.error('Error in signInWithTwitch:', error);
       return { error: error as Error };
     }
   };
@@ -162,13 +165,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     console.log("Signing out user");
     await supabase.auth.signOut();
+    navigate('/login');
   };
 
   const value = {
-    session: useStore.getState().session,
-    user: useStore.getState().user,
-    signUp,
-    signIn,
+    session,
+    user,
+    profile,
+    signInWithTwitch,
     signOut,
     loading,
   };
