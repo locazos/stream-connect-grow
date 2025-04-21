@@ -32,6 +32,7 @@ export const createUserProfile = async (user: User): Promise<Profile | null> => 
     
       
     if (error) {
+      console.log('🧩 createUserProfile insert result:', data, error);
       console.error('Error creating profile:', error);
       return null;
     }
@@ -51,6 +52,7 @@ export const fetchUserProfile = async (userId: string): Promise<Profile | null> 
       .eq('id', userId)
       .maybeSingle();
     
+      console.log('🔍 fetchUserProfile query result:', profile, error);
     if (error) {
       console.error('Error fetching profile:', error);
       return null;
