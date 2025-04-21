@@ -15,7 +15,9 @@ import { supabase } from "@/lib/supabase";
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { profile, setProfile } = useStore();
-
+  console.log("🔎 USER:", user);
+  console.log("🔎 PROFILE:", profile);
+  
 useEffect(() => {
   const fetchProfile = async () => {
     if (!user || profile) return;
