@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { motion, PanInfo, useAnimation } from "framer-motion";
 import { ProfileCard } from "@/components/ProfileCard";
 import { MatchModal } from "@/components/MatchModal";
@@ -110,7 +110,7 @@ const Explore = () => {
   };
   
   const handlePass = async () => {
-    if (!profiles.length || currentIndex >= profiles.length) return;
+    if (!profiles.length || currentIndex >= profiles.length || !user) return;
     
     await cardControls.start({ 
       x: -300, 
@@ -119,7 +119,16 @@ const Explore = () => {
       transition: { duration: 0.3 } 
     });
     
-    await swipe('left');
+    if (user) {
+      const target = profiles[currentIndex];
+      await supabase.from("swipes").insert([
+        {
+          swiper_id: user.id,
+          target_id: target.id,
+          direction: "left",
+        },
+      ]);
+    }
     
     setCurrentIndex(prev => prev + 1);
     
