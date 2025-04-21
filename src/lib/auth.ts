@@ -42,34 +42,48 @@ export const createUserProfile = async (user: User): Promise<Profile | null> => 
 };
 
 
-export const fetchUserProfile = async (userId: string): Promise<Profile | null> => {
+export const createUserProfile = async (user: User): Promise<Profile | null> => {
   try {
-    const { data: profiles, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId);
+    const userMetadata = user.user_metadata;
+    const username = userMetadata?.full_name || userMetadata?.preferred_username || 'streamer';
+    const avatarUrl = userMetadata?.avatar_url || null;
+    const twitchId = userMetadata?.provider_id || null;
 
-    console.log('🔍 fetchUserProfile result:', profiles, error);
+    console.log("🆕 Intentando crear perfil con:", {
+      id: user.id,
+      username,
+      avatarUrl,
+      twitchId,
+      created_at: new Date().toISOString()
+    });
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .insert([
+        {
+          id: user.id,
+          username,
+          avatar_url: avatarUrl,
+          description: '',
+          games: [],
+          twitch_id: twitchId,
+          created_at: new Date().toISOString(),
+        }
+      ])
+      .select()
+      .single();
 
     if (error) {
-      console.error('❌ Error fetching profile:', error);
+      console.error('❌ Error creando perfil:', error);
       return null;
     }
 
-    if (!profiles || profiles.length === 0) {
-      console.warn('⚠️ No profile found for user');
-      return null;
-    }
-
-    if (profiles.length > 1) {
-      console.error('❌ Multiple profiles found for user, expected only one');
-      return null;
-    }
-
-    return profiles[0];
+    console.log("✅ Perfil creado correctamente:", data);
+    return data;
   } catch (error) {
-    console.error('❌ Unexpected error in fetchUserProfile:', error);
+    console.error('❌ Error inesperado en createUserProfile:', error);
     return null;
   }
 };
+
 
