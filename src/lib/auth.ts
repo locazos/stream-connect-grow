@@ -24,7 +24,12 @@ export const createUserProfile = async (user: User): Promise<Profile | null> => 
         created_at: new Date().toISOString(),
       })
       .select()
-      .single();
+      .maybeSingle();
+      if (!data) {
+        console.warn('⚠️ No se pudo crear el perfil (quizás ya existe o no se insertó)');
+      }
+      
+    
       
     if (error) {
       console.error('Error creating profile:', error);
