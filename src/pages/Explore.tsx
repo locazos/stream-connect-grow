@@ -1,19 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { motion, PanInfo, useAnimation } from "framer-motion";
 import { ProfileCard } from "@/components/ProfileCard";
 import { MatchModal } from "@/components/MatchModal";
 import { MobileLayout } from "@/components/MobileLayout";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/components/ui/use-toast";
-import useStore from "@/store/useStore";
+import { ProfileCardSkeleton } from "@/components/ProfileCardSkeleton";
+import { useExploreProfiles } from "@/hooks/useExploreProfiles";
+import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import type { Database } from "@/lib/database.types";
-
-type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+import { useToast } from "@/components/ui/use-toast";
 
 const Explore = () => {
-  const { user, profiles, setProfiles, swipe, isLoading, setIsLoading, error, setError } = useStore();
+  const { user } = useAuth();
+  const { profiles, isLoading, error, loadProfiles, setProfiles } = useExploreProfiles(user?.id);
   const [currentIndex, setCurrentIndex] = useState(0);
   const constraintsRef = useRef<HTMLDivElement>(null);
   const cardControls = useAnimation();
@@ -22,64 +21,6 @@ const Explore = () => {
   useEffect(() => {
     loadProfiles();
   }, []);
-  
-  const loadProfiles = async () => {
-    if (!user) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      console.log('Loading profiles for user', user.id);
-      
-      const { data: swipedData, error: swipedError } = await supabase
-        .from('swipes')
-        .select('target_id')
-        .eq('swiper_id', user.id);
-      
-      if (swipedError) {
-        console.error('Error loading swiped profiles:', swipedError);
-        setError("Error loading swiped profiles");
-        return;
-      }
-      
-      const swipedIds = swipedData.map(swipe => swipe.target_id);
-      
-      const excludeIds = [...swipedIds, user.id];
-      
-      let query = supabase
-        .from('profiles')
-        .select('*');
-      
-      if (excludeIds.length > 0) {
-        query = query.not('id', 'in', `(${excludeIds.join(',')})`);
-      }
-      
-      const { data: profilesData, error: profilesError } = await query;
-      
-      if (profilesError) {
-        console.error('Error loading profiles:', profilesError);
-        setError("Error loading profiles");
-        return;
-      }
-      
-      console.log('Loaded profiles:', profilesData);
-      
-      const normalizedProfiles: Profile[] = profilesData.map(profile => ({
-        ...profile,
-        twitch_id: profile.twitch_id ?? null
-      }));
-      
-      setProfiles(normalizedProfiles);
-      setCurrentIndex(0);
-      
-    } catch (error) {
-      console.error('Error in loadProfiles:', error);
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
-    }
-  };
   
   const handleConnect = async () => {
     if (!profiles.length || currentIndex >= profiles.length || !user) return;
@@ -218,23 +159,15 @@ const Explore = () => {
             <div className="text-center p-6 bg-card rounded-lg shadow">
               <h3 className="text-xl font-semibold mb-2">Error</h3>
               <p className="text-muted-foreground mb-4">{error}</p>
-              <Button onClick={loadProfiles}>Intentar de nuevo</Button>
+              <Button onClick={loadProfiles}>Try Again</Button>
             </div>
-          ) : profiles.length === 0 ? (
+          ) : profiles.length === 0 || currentIndex >= profiles.length ? (
             <div className="text-center p-6 bg-card rounded-lg shadow">
-              <h3 className="text-xl font-semibold mb-2">No hay más perfiles</h3>
+              <h3 className="text-xl font-semibold mb-2">No More Profiles</h3>
               <p className="text-muted-foreground mb-4">
-                Has visto todos los perfiles disponibles.
+                You have seen all available profiles.
               </p>
-              <Button onClick={loadProfiles}>Actualizar</Button>
-            </div>
-          ) : currentIndex >= profiles.length ? (
-            <div className="text-center p-6 bg-card rounded-lg shadow">
-              <h3 className="text-xl font-semibold mb-2">No hay más perfiles</h3>
-              <p className="text-muted-foreground mb-4">
-                Has visto todos los perfiles disponibles.
-              </p>
-              <Button onClick={loadProfiles}>Actualizar</Button>
+              <Button onClick={loadProfiles}>Refresh</Button>
             </div>
           ) : (
             <motion.div
@@ -258,31 +191,5 @@ const Explore = () => {
     </MobileLayout>
   );
 };
-
-const ProfileCardSkeleton = () => (
-  <div className="w-full bg-card shadow-lg rounded-xl overflow-hidden animate-pulse">
-    <div className="h-56 sm:h-64 bg-muted flex items-center justify-center">
-      <Skeleton className="h-32 w-32 rounded-full" />
-    </div>
-    <div className="p-4">
-      <Skeleton className="h-4 w-24 mb-4" />
-      <div className="mb-4">
-        <Skeleton className="h-3 w-16 mb-2" />
-        <div className="flex flex-wrap gap-2">
-          <Skeleton className="h-6 w-16 rounded-full" />
-          <Skeleton className="h-6 w-20 rounded-full" />
-          <Skeleton className="h-6 w-12 rounded-full" />
-        </div>
-      </div>
-      <Skeleton className="h-3 w-16 mb-2" />
-      <Skeleton className="h-4 w-full mb-1" />
-      <Skeleton className="h-4 w-2/3" />
-    </div>
-    <div className="p-4 border-t border-border flex gap-4 justify-center">
-      <Skeleton className="h-14 w-14 rounded-full" />
-      <Skeleton className="h-14 w-14 rounded-full" />
-    </div>
-  </div>
-);
 
 export default Explore;

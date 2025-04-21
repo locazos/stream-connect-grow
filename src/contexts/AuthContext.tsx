@@ -1,8 +1,8 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+
+import { createContext, useContext, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import useStore from '@/store/useStore';
-import { useNavigate } from 'react-router-dom';
+import { useAuthState } from '@/hooks/useAuthState';
 import type { Database } from '@/lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -19,145 +19,10 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [loading, setLoading] = useState(true);
-  const { session, user, profile, setSession, setUser, setProfile } = useStore();
-  const navigate = useNavigate();
+  const { session, user, profile, loading } = useAuthState();
 
-  useEffect(() => {
-    console.log("Initializing auth state...");
-    
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log(`Auth state change: ${event}`);
-        
-        // Synchronous state updates first
-        setSession(session);
-        setUser(session?.user || null);
-        
-        if (session?.user) {
-          // Defer profile fetch to avoid deadlocks
-          setTimeout(() => {
-            fetchUserProfile(session.user.id);
-          }, 0);
-        } else {
-          setProfile(null);
-        }
-        
-        setLoading(false);
-      }
-    );
-
-    // Then check for existing session
-    const getInitialSession = async () => {
-      try {
-        console.log("Getting initial session...");
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          console.log("Initial session found");
-          setSession(session);
-          setUser(session.user);
-          await fetchUserProfile(session.user.id);
-        } else {
-          console.log("No initial session found");
-        }
-      } catch (error) {
-        console.error('Error getting initial session:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getInitialSession();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [navigate, setSession, setUser, setProfile]);
-
-  // Fetch profile data from the profiles table
-  const fetchUserProfile = async (userId: string) => {
-    try {
-      console.log(`Fetching profile for user ${userId}`);
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-      
-      if (error) {
-        console.error('Error fetching profile:', error);
-        return;
-      }
-      
-      if (!profile) {
-        console.log("No profile found, creating one");
-        await createUserProfile(userId);
-      } else {
-        console.log("Profile found:", profile);
-        // Ensure twitch_id is always present
-        const profileWithTwitchId: Profile = {
-          ...profile,
-          twitch_id: profile.twitch_id ?? null
-        };
-        setProfile(profileWithTwitchId);
-      }
-    } catch (error) {
-      console.error('Error in fetchUserProfile:', error);
-    }
-  };
-
-  // Create a new profile from Twitch metadata
-  const createUserProfile = async (userId: string) => {
-    try {
-      console.log(`Creating profile for user ${userId}`);
-      const { data: userData } = await supabase.auth.getUser();
-      
-      if (!userData?.user) {
-        console.error('No user data available');
-        return;
-      }
-      
-      const user = userData.user;
-      const userMetadata = user.user_metadata;
-      
-      console.log('User metadata:', userMetadata);
-      
-      // Extract Twitch data from user metadata
-      const username = userMetadata?.full_name || userMetadata?.preferred_username || 'streamer';
-      const avatarUrl = userMetadata?.avatar_url || null;
-      const twitchId = userMetadata?.provider_id || null;
-      
-      const { data, error } = await supabase
-        .from('profiles')
-        .insert({
-          id: userId,
-          username,
-          avatar_url: avatarUrl,
-          description: '',
-          games: [],
-          twitch_id: twitchId,
-          created_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
-      
-      if (error) {
-        console.error('Error creating profile:', error);
-      } else {
-        console.log("Profile created:", data);
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error('Error in createUserProfile:', error);
-    }
-  };
-
-  // Sign in with Twitch
   const signInWithTwitch = async () => {
     try {
-      console.log('Signing in with Twitch...');
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'twitch',
         options: {
@@ -173,9 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = async () => {
-    console.log("Signing out user");
     await supabase.auth.signOut();
-    navigate('/login');
   };
 
   const value = {
