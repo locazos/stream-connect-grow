@@ -13,7 +13,7 @@ import useStore from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
 
 const Profile = () => {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading: authLoading } = useAuth();
   const { profile, setProfile } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,13 +25,13 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
-  if (loading) {
+  if (authLoading) {
     return (
       <MobileLayout>
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center space-y-4">
             <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto"></div>
-            <p className="text-muted-foreground">Cargando perfil...</p>
+            <p className="text-muted-foreground">Cargando sesión...</p>
           </div>
         </div>
       </MobileLayout>
