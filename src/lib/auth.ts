@@ -11,7 +11,9 @@ export const createUserProfile = async (user: User): Promise<Profile | null> => 
     const username = userMetadata?.full_name || userMetadata?.preferred_username || 'streamer';
     const avatarUrl = userMetadata?.avatar_url || null;
     const twitchId = userMetadata?.provider_id || null;
-    
+
+    console.log("🆕 Intentando crear perfil con:", { id: user.id, username, avatarUrl, twitchId });
+
     const { data, error } = await supabase
       .from('profiles')
       .insert({
@@ -24,25 +26,21 @@ export const createUserProfile = async (user: User): Promise<Profile | null> => 
         created_at: new Date().toISOString(),
       })
       .select()
-      .maybeSingle();
-      if (!data) {
-        console.warn('⚠️ No se pudo crear el perfil (quizás ya existe o no se insertó)');
-      }
-      
-    
-      
+      .single();
+
     if (error) {
-      console.log('🧩 createUserProfile insert result:', data, error);
-      console.error('Error creating profile:', error);
+      console.error('❌ Error creando perfil:', error.message);
       return null;
     }
-    
+
+    console.log("✅ Perfil creado correctamente:", data);
     return data;
   } catch (error) {
-    console.error('Error in createUserProfile:', error);
+    console.error('❌ Error inesperado en createUserProfile:', error);
     return null;
   }
 };
+
 
 export const fetchUserProfile = async (userId: string): Promise<Profile | null> => {
   try {

@@ -17,6 +17,7 @@ export const useAuthState = () => {
     const handleProfileFetch = async (userId: string) => {
       const profile = await fetchUserProfile(userId);
       if (!profile) {
+        console.log("🔄 No se encontró perfil, creando uno nuevo...");
         if (session?.user) {
           const newProfile = await createUserProfile(session.user);
           setProfile(newProfile);
