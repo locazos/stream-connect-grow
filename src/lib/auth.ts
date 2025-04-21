@@ -21,7 +21,7 @@ export const createUserProfile = async (user: User): Promise<Profile | null> => 
         username,
         avatar_url: avatarUrl,
         description: '',
-        games: [],
+        games: [], // ✅ Esto es un array vacío de verdad
         twitch_id: twitchId,
         created_at: new Date().toISOString(),
       })
