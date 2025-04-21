@@ -73,7 +73,14 @@ const Explore = () => {
       }
       
       console.log('Loaded profiles:', profilesData);
-      setProfiles(profilesData);
+      
+      // Ensure each profile has a twitch_id property (null if not present)
+      const normalizedProfiles = profilesData.map(profile => ({
+        ...profile,
+        twitch_id: profile.twitch_id || null
+      }));
+      
+      setProfiles(normalizedProfiles);
       setCurrentIndex(0);
       
     } catch (error) {
@@ -101,80 +108,76 @@ const Explore = () => {
     });
   
     // 1. Insert swipe
-const { error: swipeError } = await supabase.from("swipes").insert([
-  {
-    swiper_id: currentUserId,
-    target_id: targetId,
-    direction: "right",
-  },
-]);
+    const { error: swipeError } = await supabase.from("swipes").insert([
+      {
+        swiper_id: currentUserId,
+        target_id: targetId,
+        direction: "right",
+      },
+    ]);
 
-if (swipeError) {
-  console.error("❌ Error al guardar el swipe:", swipeError.message);
-  toast({
-    title: "Error",
-    description: "No se pudo enviar la solicitud.",
-    variant: "destructive",
-  });
-  return;
-}
+    if (swipeError) {
+      console.error("❌ Error al guardar el swipe:", swipeError.message);
+      toast({
+        title: "Error",
+        description: "No se pudo enviar la solicitud.",
+        variant: "destructive",
+      });
+      return;
+    }
 
-console.log("✅ Swipe guardado:", currentUserId, "→", targetId);
-console.log("🟢 currentUserId:", currentUserId);
-console.log("🟣 targetId:", targetId);
-console.log(`🧭 Buscando reciprocidad: ¿ha hecho ${targetId} swipe a ${currentUserId} ?`);
+    console.log("✅ Swipe guardado:", currentUserId, "→", targetId);
+    console.log("🟢 currentUserId:", currentUserId);
+    console.log("🟣 targetId:", targetId);
+    console.log(`🧭 Buscando reciprocidad: ¿ha hecho ${targetId} swipe a ${currentUserId} ?`);
 
-// 2. Comprobar reciprocidad con query más robusta
-const { data: reciprocalSwipes, error: checkError } = await supabase
-  .from("swipes")
-  .select("*")
-  .eq("swiper_id", targetId)
-  .eq("target_id", currentUserId)
-  .eq("direction", "right");
+    // 2. Comprobar reciprocidad con query más robusta
+    const { data: reciprocalSwipes, error: checkError } = await supabase
+      .from("swipes")
+      .select("*")
+      .eq("swiper_id", targetId)
+      .eq("target_id", currentUserId)
+      .eq("direction", "right");
 
-console.log("🖊️ Swipes recíprocos encontrados:", reciprocalSwipes);
+    console.log("🖊️ Swipes recíprocos encontrados:", reciprocalSwipes);
 
-if (checkError) {
-  console.error("❌ Error comprobando reciprocidad:", checkError.message);
-  return;
-}
+    if (checkError) {
+      console.error("❌ Error comprobando reciprocidad:", checkError.message);
+      return;
+    }
 
-const isReciprocal = reciprocalSwipes && reciprocalSwipes.length > 0;
+    const isReciprocal = reciprocalSwipes && reciprocalSwipes.length > 0;
 
-if (isReciprocal) {
-  console.log("🤝 Reciprocidad detectada. Creando match...");
+    if (isReciprocal) {
+      console.log("🤝 Reciprocidad detectada. Creando match...");
 
-  const { data: matchResult, error: matchError } = await supabase.rpc("create_match", {
-    input_user_1: currentUserId,
-  input_user_2: targetId,
-  });
+      const { data: matchResult, error: matchError } = await supabase.rpc("create_match", {
+        input_user_1: currentUserId,
+        input_user_2: targetId,
+      });
 
-  if (matchError) {
-    console.error("❌ Error creando match:", matchError.message);
-    toast({
-      title: "Error creando match",
-      description: matchError.message,
-      variant: "destructive",
-    });
-  } else {
-    console.log("🎉 Match creado correctamente:", matchResult);
-    toast({
-      title: "🎮 ¡Es un match!",
-      description: `Has hecho match con ${target.username}`,
-    });
-  }
-} else {
-  console.log("🕐 No hay reciprocidad aún.");
-  toast({
-    title: "✅ Solicitud enviada",
-    description: `Has conectado con ${target.username}`,
-  });
-}
+      if (matchError) {
+        console.error("❌ Error creando match:", matchError.message);
+        toast({
+          title: "Error creando match",
+          description: matchError.message,
+          variant: "destructive",
+        });
+      } else {
+        console.log("🎉 Match creado correctamente:", matchResult);
+        toast({
+          title: "🎮 ¡Es un match!",
+          description: `Has hecho match con ${target.username}`,
+        });
+      }
+    } else {
+      console.log("🕐 No hay reciprocidad aún.");
+      toast({
+        title: "✅ Solicitud enviada",
+        description: `Has conectado con ${target.username}`,
+      });
+    }
 
-
-
-
-  
     // Pasar al siguiente
     setCurrentIndex((prev) => prev + 1);
     cardControls.set({ x: 0, opacity: 1, rotateZ: 0 });

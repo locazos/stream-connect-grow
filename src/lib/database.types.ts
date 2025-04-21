@@ -92,8 +92,8 @@ export interface Database {
     Functions: {
       create_match: {
         Args: {
-          user_1: string
-          user_2: string
+          input_user_1: string
+          input_user_2: string
         }
         Returns: boolean
       }

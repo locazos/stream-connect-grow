@@ -58,8 +58,8 @@ export async function createMatch(userId: string, targetId: string): Promise<boo
     // First, try the RPC method to create the match
     console.log('Trying to create match with RPC method first');
     const { data: rpcResult, error: rpcError } = await supabase.rpc('create_match', {
-      user_1: userId,
-      user_2: targetId
+      input_user_1: userId,
+      input_user_2: targetId
     });
     
     if (rpcError) {
@@ -166,4 +166,3 @@ export async function createMatch(userId: string, targetId: string): Promise<boo
     return false;
   }
 }
-

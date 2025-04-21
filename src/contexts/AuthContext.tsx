@@ -120,6 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Extract Twitch data from user metadata
       const username = userMetadata?.full_name || userMetadata?.preferred_username || 'streamer';
       const avatarUrl = userMetadata?.avatar_url || null;
+      const twitchId = userMetadata?.provider_id || null;
       
       const { data, error } = await supabase
         .from('profiles')
@@ -127,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: userId,
           username,
           avatar_url: avatarUrl,
-          twitch_id: userMetadata?.provider_id || null,
+          twitch_id: twitchId,
           games: [],
         })
         .select()
