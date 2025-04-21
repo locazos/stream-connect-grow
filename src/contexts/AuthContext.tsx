@@ -1,14 +1,16 @@
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import useStore from '@/store/useStore';
 import { useNavigate } from 'react-router-dom';
+import type { Database } from '@/lib/database.types';
+
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface AuthContextType {
   session: Session | null;
   user: User | null;
-  profile: any;
+  profile: Profile | null;
   signInWithTwitch: () => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
   loading: boolean;
@@ -94,16 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await createUserProfile(userId);
       } else {
         console.log("Profile found:", profile);
-        // Make sure the profile has twitch_id property before setting
-        if (!profile.twitch_id) {
-          const updatedProfile = {
-            ...profile,
-            twitch_id: profile.twitch_id || null
-          };
-          setProfile(updatedProfile);
-        } else {
-          setProfile(profile);
-        }
+        // Ensure twitch_id is always present
+        const profileWithTwitchId: Profile = {
+          ...profile,
+          twitch_id: profile.twitch_id ?? null
+        };
+        setProfile(profileWithTwitchId);
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
@@ -137,8 +135,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           id: userId,
           username,
           avatar_url: avatarUrl,
-          twitch_id: twitchId,
+          description: '',
           games: [],
+          twitch_id: twitchId,
+          created_at: new Date().toISOString(),
         })
         .select()
         .single();

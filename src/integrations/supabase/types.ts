@@ -52,6 +52,7 @@ export type Database = {
           description: string | null
           games: string[] | null
           id: string
+          twitch_id: string | null
           updated_at: string | null
           username: string
         }
@@ -61,6 +62,7 @@ export type Database = {
           description?: string | null
           games?: string[] | null
           id: string
+          twitch_id?: string | null
           updated_at?: string | null
           username: string
         }
@@ -70,6 +72,7 @@ export type Database = {
           description?: string | null
           games?: string[] | null
           id?: string
+          twitch_id?: string | null
           updated_at?: string | null
           username?: string
         }

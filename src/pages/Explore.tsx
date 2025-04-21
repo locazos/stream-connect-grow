@@ -1,4 +1,3 @@
-
 import { useEffect, useRef, useState } from "react";
 import { motion, PanInfo, useAnimation } from "framer-motion";
 import { ProfileCard } from "@/components/ProfileCard";
@@ -21,11 +20,9 @@ const Explore = () => {
   const { toast } = useToast();
   
   useEffect(() => {
-    // Load profiles
     loadProfiles();
   }, []);
   
-  // Load profiles from Supabase
   const loadProfiles = async () => {
     if (!user) return;
     
@@ -33,11 +30,8 @@ const Explore = () => {
     setError(null);
     
     try {
-      // Get profiles that are not the current user
-      // and that the current user has not already swiped on
       console.log('Loading profiles for user', user.id);
       
-      // First, get all the profiles that the user has already swiped on
       const { data: swipedData, error: swipedError } = await supabase
         .from('swipes')
         .select('target_id')
@@ -49,13 +43,10 @@ const Explore = () => {
         return;
       }
       
-      // Get the IDs of profiles that have been swiped on
       const swipedIds = swipedData.map(swipe => swipe.target_id);
       
-      // Add the current user's ID to the list of IDs to exclude
       const excludeIds = [...swipedIds, user.id];
       
-      // Get profiles that are not in the exclude list
       let query = supabase
         .from('profiles')
         .select('*');
@@ -74,10 +65,9 @@ const Explore = () => {
       
       console.log('Loaded profiles:', profilesData);
       
-      // Ensure each profile has a twitch_id property (null if not present)
-      const normalizedProfiles = profilesData.map(profile => ({
+      const normalizedProfiles: Profile[] = profilesData.map(profile => ({
         ...profile,
-        twitch_id: profile.twitch_id || null
+        twitch_id: profile.twitch_id ?? null
       }));
       
       setProfiles(normalizedProfiles);
@@ -91,7 +81,6 @@ const Explore = () => {
     }
   };
   
-  // Handle swipe right (connect)
   const handleConnect = async () => {
     if (!profiles.length || currentIndex >= profiles.length || !user) return;
   
@@ -99,7 +88,6 @@ const Explore = () => {
     const targetId = target.id;
     const currentUserId = user.id;
   
-    // Animate card
     await cardControls.start({
       x: 300,
       opacity: 0,
@@ -107,7 +95,6 @@ const Explore = () => {
       transition: { duration: 0.3 },
     });
   
-    // 1. Insert swipe
     const { error: swipeError } = await supabase.from("swipes").insert([
       {
         swiper_id: currentUserId,
@@ -131,7 +118,6 @@ const Explore = () => {
     console.log("🟣 targetId:", targetId);
     console.log(`🧭 Buscando reciprocidad: ¿ha hecho ${targetId} swipe a ${currentUserId} ?`);
 
-    // 2. Comprobar reciprocidad con query más robusta
     const { data: reciprocalSwipes, error: checkError } = await supabase
       .from("swipes")
       .select("*")
@@ -178,17 +164,13 @@ const Explore = () => {
       });
     }
 
-    // Pasar al siguiente
     setCurrentIndex((prev) => prev + 1);
     cardControls.set({ x: 0, opacity: 1, rotateZ: 0 });
   };
   
-  
-  // Handle swipe left (pass)
   const handlePass = async () => {
     if (!profiles.length || currentIndex >= profiles.length) return;
     
-    // Animate card to the left
     await cardControls.start({ 
       x: -300, 
       opacity: 0,
@@ -196,29 +178,22 @@ const Explore = () => {
       transition: { duration: 0.3 } 
     });
     
-    // Perform swipe action
     await swipe('left');
     
-    // Move to next card
     setCurrentIndex(prev => prev + 1);
     
-    // Reset animation
     cardControls.set({ x: 0, opacity: 1, rotateZ: 0 });
   };
   
-  // Handle drag end for manual swiping
   const handleDragEnd = async (e: any, info: PanInfo) => {
     const threshold = 100; // minimum distance to trigger swipe
     const velocity = 500; // minimum velocity to trigger swipe
     
     if (info.offset.x > threshold || info.velocity.x > velocity) {
-      // Swiped right
       await handleConnect();
     } else if (info.offset.x < -threshold || info.velocity.x < -velocity) {
-      // Swiped left
       await handlePass();
     } else {
-      // Not swiped enough, return to center
       cardControls.start({ 
         x: 0, 
         opacity: 1,
@@ -279,13 +254,11 @@ const Explore = () => {
         </div>
       </div>
       
-      {/* Match Modal */}
       <MatchModal />
     </MobileLayout>
   );
 };
 
-// Skeleton loader for profile card
 const ProfileCardSkeleton = () => (
   <div className="w-full bg-card shadow-lg rounded-xl overflow-hidden animate-pulse">
     <div className="h-56 sm:h-64 bg-muted flex items-center justify-center">
