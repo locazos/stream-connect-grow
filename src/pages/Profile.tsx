@@ -38,6 +38,12 @@ useEffect(() => {
   fetchProfile();
 }, [user, profile, setProfile]);
 
+useEffect(() => {
+  console.log("👤 user:", user);
+  console.log("📄 profile:", profile);
+}, [user, profile]);
+
+
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     username: profile?.username || "",
