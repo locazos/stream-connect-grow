@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/MobileLayout";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,6 @@ import { supabase } from "@/lib/supabase";
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { profile, setProfile } = useStore();
-  import { useEffect } from "react";
 
 useEffect(() => {
   const fetchProfile = async () => {
