@@ -150,7 +150,7 @@ useEffect(() => {
     await signOut();
   };
   
-  if (!profile) {
+  if (!user || !profile) {
     return (
       <MobileLayout>
         <div className="flex flex-col items-center justify-center h-screen text-white">
@@ -159,6 +159,7 @@ useEffect(() => {
       </MobileLayout>
     );
   }
+  
     
   return (
     <MobileLayout>
