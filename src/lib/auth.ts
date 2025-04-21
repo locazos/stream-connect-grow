@@ -1,4 +1,3 @@
-
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/lib/database.types';
@@ -45,6 +44,27 @@ export const createUserProfile = async (user: User): Promise<Profile | null> => 
     return data;
   } catch (error) {
     console.error('❌ Error inesperado en createUserProfile:', error);
+    return null;
+  }
+};
+
+export const fetchUserProfile = async (userId: string): Promise<Profile | null> => {
+  try {
+    const { data: profile, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle();
+
+    console.log('🔍 fetchUserProfile query result:', profile, error);
+    if (error) {
+      console.error('Error fetching profile:', error);
+      return null;
+    }
+
+    return profile;
+  } catch (error) {
+    console.error('Error in fetchUserProfile:', error);
     return null;
   }
 };
