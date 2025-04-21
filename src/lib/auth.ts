@@ -44,21 +44,32 @@ export const createUserProfile = async (user: User): Promise<Profile | null> => 
 
 export const fetchUserProfile = async (userId: string): Promise<Profile | null> => {
   try {
-    const { data: profile, error } = await supabase
+    const { data: profiles, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', userId)
-      .maybeSingle();
-    
-      console.log('🔍 fetchUserProfile query result:', profile, error);
+      .eq('id', userId);
+
+    console.log('🔍 fetchUserProfile result:', profiles, error);
+
     if (error) {
-      console.error('Error fetching profile:', error);
+      console.error('❌ Error fetching profile:', error);
       return null;
     }
-    
-    return profile;
+
+    if (!profiles || profiles.length === 0) {
+      console.warn('⚠️ No profile found for user');
+      return null;
+    }
+
+    if (profiles.length > 1) {
+      console.error('❌ Multiple profiles found for user, expected only one');
+      return null;
+    }
+
+    return profiles[0];
   } catch (error) {
-    console.error('Error in fetchUserProfile:', error);
+    console.error('❌ Unexpected error in fetchUserProfile:', error);
     return null;
   }
 };
+
