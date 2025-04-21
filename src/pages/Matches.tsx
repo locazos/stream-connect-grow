@@ -1,19 +1,22 @@
-
 import { useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, Navigate } from "react-router-dom";
 import { MobileLayout } from "@/components/MobileLayout";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import useStore from "@/store/useStore";
 
 const Matches = () => {
   const { matches, loadMatches, isLoading, error } = useStore();
+  const { user, loading } = useAuth();
   const { toast } = useToast();
   
   useEffect(() => {
+    if (!user) return;
+    
     console.log('Matches component mounted, loading matches...');
     loadMatches().catch(err => {
       console.error('Error loading matches in component:', err);
@@ -23,24 +26,24 @@ const Matches = () => {
         variant: "destructive"
       });
     });
-  }, [loadMatches, toast]);
+  }, [loadMatches, toast, user]);
+
+  if (loading) {
+    return (
+      <MobileLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto"></div>
+            <p className="text-muted-foreground">Cargando...</p>
+          </div>
+        </div>
+      </MobileLayout>
+    );
+  }
   
-  const handleRefresh = () => {
-    console.log('Manually refreshing matches...');
-    loadMatches().then(() => {
-      toast({
-        title: "Actualizado",
-        description: "Lista de matches actualizada",
-      });
-    }).catch(err => {
-      console.error('Error refreshing matches:', err);
-      toast({
-        title: "Error",
-        description: "No se pudieron actualizar tus matches. Intenta de nuevo.",
-        variant: "destructive"
-      });
-    });
-  };
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
   
   return (
     <MobileLayout>
@@ -50,7 +53,7 @@ const Matches = () => {
           <Button 
             size="sm" 
             variant="outline" 
-            onClick={handleRefresh}
+            onClick={() => loadMatches()}
             disabled={isLoading}
           >
             {isLoading ? "Cargando..." : "Actualizar"}
@@ -137,7 +140,6 @@ const Matches = () => {
   );
 };
 
-// Skeleton loader for match card
 const MatchCardSkeleton = () => (
   <div className="p-4 bg-card rounded-lg shadow-sm border border-border flex items-center gap-4 animate-pulse">
     <Skeleton className="h-16 w-16 rounded-full" />

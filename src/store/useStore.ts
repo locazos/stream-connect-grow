@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { supabase } from '@/integrations/supabase/client';
@@ -151,8 +150,9 @@ const useStore = create<AppState>()(
         },
         loadMatches: async () => {
           const { user } = get();
+          
           if (!user) {
-            console.error('Cannot load matches: no user logged in');
+            console.log('Cannot load matches: waiting for user authentication');
             return;
           }
           
@@ -161,7 +161,6 @@ const useStore = create<AppState>()(
           try {
             console.log('Loading matches for user:', user.id);
             
-            // Direct query with proper formatting for the OR condition
             const { data: matchesData, error: matchesError } = await supabase
               .from('matches')
               .select('*')
@@ -181,7 +180,6 @@ const useStore = create<AppState>()(
               return;
             }
             
-            // For each match, get the other user's profile
             const matchesWithProfiles = await Promise.all(
               matchesData.map(async (match) => {
                 const otherUserId = match.user_a === user.id ? match.user_b : match.user_a;
@@ -203,7 +201,6 @@ const useStore = create<AppState>()(
               })
             );
             
-            // Filter out matches with null profiles
             const validMatches = matchesWithProfiles.filter(match => match.profile !== null) as Match[];
             
             console.log('Valid matches with profiles:', validMatches);

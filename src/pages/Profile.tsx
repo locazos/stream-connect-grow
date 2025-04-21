@@ -1,5 +1,5 @@
-
 import { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { MobileLayout } from "@/components/MobileLayout";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import useStore from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
 
 const Profile = () => {
-  const { user, signOut } = useAuth();
+  const { user, signOut, loading } = useAuth();
   const { profile, setProfile } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -25,13 +25,41 @@ const Profile = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
   
-  // Handle form input change
+  if (loading) {
+    return (
+      <MobileLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto"></div>
+            <p className="text-muted-foreground">Cargando perfil...</p>
+          </div>
+        </div>
+      </MobileLayout>
+    );
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+  
+  if (!profile) {
+    return (
+      <MobileLayout>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center space-y-4">
+            <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto"></div>
+            <p className="text-muted-foreground">Cargando datos del perfil...</p>
+          </div>
+        </div>
+      </MobileLayout>
+    );
+  }
+  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
   
-  // Add a game to the list
   const handleAddGame = () => {
     if (!formData.game.trim()) return;
     
@@ -50,7 +78,6 @@ const Profile = () => {
     }
   };
   
-  // Remove a game from the list
   const handleRemoveGame = (gameToRemove: string) => {
     setFormData((prev) => ({
       ...prev,
@@ -58,7 +85,6 @@ const Profile = () => {
     }));
   };
   
-  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -87,7 +113,6 @@ const Profile = () => {
         return;
       }
       
-      // Update profile in store
       if (profile) {
         setProfile({
           ...profile,
@@ -117,12 +142,9 @@ const Profile = () => {
     }
   };
   
-  // Handle logout
   const handleLogout = async () => {
     await signOut();
   };
-  
-  if (!profile) return null;
   
   return (
     <MobileLayout>
