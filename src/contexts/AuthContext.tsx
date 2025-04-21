@@ -94,7 +94,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await createUserProfile(userId);
       } else {
         console.log("Profile found:", profile);
-        setProfile(profile);
+        // Make sure the profile has twitch_id property before setting
+        if (!profile.twitch_id) {
+          const updatedProfile = {
+            ...profile,
+            twitch_id: profile.twitch_id || null
+          };
+          setProfile(updatedProfile);
+        } else {
+          setProfile(profile);
+        }
       }
     } catch (error) {
       console.error('Error in fetchUserProfile:', error);
