@@ -2,7 +2,9 @@
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { createUserProfile, fetchUserProfile } from '@/lib/auth';
+import { createUserProfile, fetchUserProfile } from '@/lib/auth.ts';
+console.log("🧠 createUserProfile importado correctamente:", createUserProfile);
+
 import type { Database } from '@/lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
