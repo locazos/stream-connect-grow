@@ -7,6 +7,7 @@ type Profile = Database['public']['Tables']['profiles']['Row'];
 // ✅ Crear nuevo perfil si no existe
 export const createUserProfile = async (user: User): Promise<Profile | null> => {
   try {
+    console.log("➡ Entrando en createUserProfile");
     const userMetadata = user.user_metadata;
     const username = userMetadata?.full_name || userMetadata?.preferred_username || 'streamer';
     const avatarUrl = userMetadata?.avatar_url || null;
