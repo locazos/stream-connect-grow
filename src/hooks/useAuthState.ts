@@ -31,6 +31,9 @@ export const useAuthState = () => {
       async (event, session) => {
         setSession(session);
         setUser(session?.user || null);
+
+        // 👇 Este es el log que necesitas añadir
+    console.log("🧑 Sesión detectada, user:", session?.user);
         
         if (session?.user) {
           setTimeout(() => {
