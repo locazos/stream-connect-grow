@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -18,16 +17,29 @@ export const useAuthState = () => {
   useEffect(() => {
     const handleProfileFetch = async (userId: string) => {
       const profile = await fetchUserProfile(userId);
+    
+      console.log("🔍 Resultado de fetchUserProfile:", profile);
+    
       if (!profile) {
+        console.log("🟨 No profile found for user");
         console.log("🔄 No se encontró perfil, creando uno nuevo...");
+        console.log("📦 session:", session);
+        console.log("🧑 session.user:", session?.user);
+    
         if (session?.user) {
+          console.log("🚀 Ejecutando createUserProfile con ID:", session.user.id);
           const newProfile = await createUserProfile(session.user);
+          console.log("✅ Resultado de createUserProfile:", newProfile);
           setProfile(newProfile);
+        } else {
+          console.warn("⚠️ session.user está vacío, no se puede crear perfil.");
         }
       } else {
+        console.log("✅ Perfil encontrado:", profile);
         setProfile(profile);
       }
     };
+    
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
