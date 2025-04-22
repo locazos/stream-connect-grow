@@ -15,30 +15,25 @@ export const useAuthState = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
 
   useEffect(() => {
-    const handleProfileFetch = async (userId: string) => {
-      const profile = await fetchUserProfile(userId);
-    
+    const handleProfileFetch = async (user: User, session: Session) => {
+      const profile = await fetchUserProfile(user.id);
       console.log("🔍 Resultado de fetchUserProfile:", profile);
     
       if (!profile) {
         console.log("🟨 No profile found for user");
-        console.log("🔄 No se encontró perfil, creando uno nuevo...");
         console.log("📦 session:", session);
-        console.log("🧑 session.user:", session?.user);
+        console.log("🧑 user:", user);
     
-        if (session?.user) {
-          console.log("🚀 Ejecutando createUserProfile con ID:", session.user.id);
-          const newProfile = await createUserProfile(session.user);
-          console.log("✅ Resultado de createUserProfile:", newProfile);
-          setProfile(newProfile);
-        } else {
-          console.warn("⚠️ session.user está vacío, no se puede crear perfil.");
-        }
+        console.log("🚀 Ejecutando createUserProfile con ID:", user.id);
+        const newProfile = await createUserProfile(user);
+        console.log("✅ Resultado de createUserProfile:", newProfile);
+        setProfile(newProfile);
       } else {
         console.log("✅ Perfil encontrado:", profile);
         setProfile(profile);
       }
     };
+    
     
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -51,8 +46,11 @@ export const useAuthState = () => {
         
         if (session?.user) {
           setTimeout(() => {
-            handleProfileFetch(session.user.id);
+            if (session?.user) {
+              handleProfileFetch(session.user, session);
+            }
           }, 0);
+          
         } else {
           setProfile(null);
         }
@@ -68,7 +66,7 @@ export const useAuthState = () => {
         if (session) {
           setSession(session);
           setUser(session.user);
-          await handleProfileFetch(session.user.id);
+          await handleProfileFetch(session.user, session);
         }
       } catch (error) {
         console.error('Error getting initial session:', error);
