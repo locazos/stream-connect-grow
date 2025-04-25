@@ -26,12 +26,25 @@ const Profile = () => {
   const [formData, setFormData] = useState({
     username: profile?.username || "",
     description: profile?.description || "",
-    categories: profile?.categories || [],
-    stream_days: profile?.stream_days || [],
+    categories: profile?.categories ?? [],
+    stream_days: profile?.stream_days ?? [],
     stream_time: profile?.stream_time || "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  // Update form data when profile changes
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        username: profile.username || "",
+        description: profile.description || "",
+        categories: profile.categories ?? [],
+        stream_days: profile.stream_days ?? [],
+        stream_time: profile.stream_time || "",
+      });
+    }
+  }, [profile]);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -67,19 +80,22 @@ const Profile = () => {
   const handleStreamDayToggle = (day: string) => {
     setFormData((prev) => ({
       ...prev,
-      stream_days: prev.stream_days.includes(day)
+      stream_days: prev.stream_days?.includes(day)
         ? prev.stream_days.filter((d) => d !== day)
-        : [...prev.stream_days, day],
+        : [...(prev.stream_days ?? []), day],
     }));
   };
 
   const handleCategorySelect = (category: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      categories: prev.categories.includes(category)
-        ? prev.categories.filter((c) => c !== category)
-        : [...prev.categories, category],
-    }));
+    setFormData((prev) => {
+      const currentCategories = prev.categories ?? [];
+      return {
+        ...prev,
+        categories: currentCategories.includes(category)
+          ? currentCategories.filter((c) => c !== category)
+          : [...currentCategories, category],
+      };
+    });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,8 +110,8 @@ const Profile = () => {
         .update({
           username: formData.username,
           description: formData.description,
-          categories: formData.categories,
-          stream_days: formData.stream_days,
+          categories: formData.categories ?? [],
+          stream_days: formData.stream_days ?? [],
           stream_time: formData.stream_time,
           updated_at: new Date().toISOString(),
         })
@@ -107,6 +123,8 @@ const Profile = () => {
         setProfile({
           ...profile,
           ...formData,
+          categories: formData.categories ?? [],
+          stream_days: formData.stream_days ?? [],
           updated_at: new Date().toISOString(),
         });
       }
@@ -138,6 +156,12 @@ const Profile = () => {
       </MobileLayout>
     );
   }
+
+  // Safe access to array properties
+  const categories = profile?.categories ?? [];
+  const streamDays = profile?.stream_days ?? [];
+  const formCategories = formData?.categories ?? [];
+  const formStreamDays = formData?.stream_days ?? [];
 
   return (
     <MobileLayout>
@@ -186,8 +210,8 @@ const Profile = () => {
                       role="combobox"
                       className="w-full justify-between"
                     >
-                      {formData.categories && formData.categories.length > 0
-                        ? `${formData.categories.length} categorías seleccionadas`
+                      {formCategories.length > 0
+                        ? `${formCategories.length} categorías seleccionadas`
                         : "Seleccionar categorías"}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                     </Button>
@@ -206,7 +230,7 @@ const Profile = () => {
                             <Check
                               className={cn(
                                 "mr-2 h-4 w-4",
-                                formData.categories && formData.categories.includes(category)
+                                formCategories.includes(category)
                                   ? "opacity-100"
                                   : "opacity-0"
                               )}
@@ -219,7 +243,7 @@ const Profile = () => {
                   </PopoverContent>
                 </Popover>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {(formData.categories || []).map((category) => (
+                  {formCategories.map((category) => (
                     <Badge
                       key={category}
                       variant="secondary"
@@ -239,7 +263,7 @@ const Profile = () => {
                     <div key={day} className="flex items-center space-x-2">
                       <Checkbox
                         id={day}
-                        checked={formData.stream_days.includes(day)}
+                        checked={formStreamDays.includes(day)}
                         onCheckedChange={() => handleStreamDayToggle(day)}
                       />
                       <label
@@ -258,7 +282,7 @@ const Profile = () => {
                 <Input
                   id="stream_time"
                   name="stream_time"
-                  value={formData.stream_time}
+                  value={formData.stream_time || ""}
                   onChange={handleChange}
                   placeholder="20:00 - 00:00"
                 />
@@ -285,13 +309,13 @@ const Profile = () => {
                 <p className="text-muted-foreground">{user.email}</p>
               </div>
 
-              {profile.categories && profile.categories.length > 0 && (
+              {categories.length > 0 && (
                 <div>
                   <h2 className="text-sm font-medium text-muted-foreground mb-2">
                     Categorías
                   </h2>
                   <div className="flex flex-wrap gap-2">
-                    {(profile.categories || []).map((category) => (
+                    {categories.map((category) => (
                       <Badge key={category} variant="secondary">
                         {category}
                       </Badge>
@@ -300,13 +324,13 @@ const Profile = () => {
                 </div>
               )}
 
-              {((profile.stream_days && profile.stream_days.length > 0) || profile.stream_time) && (
+              {(streamDays.length > 0 || profile.stream_time) && (
                 <div>
                   <h2 className="text-sm font-medium text-muted-foreground mb-2">
                     Horario
                   </h2>
                   <StreamSchedule
-                    days={profile.stream_days || []}
+                    days={streamDays}
                     time={profile.stream_time}
                   />
                 </div>

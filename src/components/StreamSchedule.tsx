@@ -10,13 +10,16 @@ interface StreamScheduleProps {
 }
 
 export function StreamSchedule({ days = [], time, className = "" }: StreamScheduleProps) {
-  if (!days.length && !time) return null;
+  // Ensure days is always an array
+  const safeDays = Array.isArray(days) ? days : [];
+  
+  if (!safeDays.length && !time) return null;
 
   return (
     <div className={className}>
-      {days.length > 0 && (
+      {safeDays.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-2">
-          {days.map((day) => (
+          {safeDays.map((day) => (
             <Badge key={day} variant="outline">
               {day}
             </Badge>

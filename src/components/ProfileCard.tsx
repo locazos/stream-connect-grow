@@ -27,6 +27,10 @@ export function ProfileCard({
   dragConstraints,
   onDragEnd,
 }: ProfileCardProps) {
+  // Ensure all array properties have safe fallbacks
+  const categories = profile?.categories ?? [];
+  const streamDays = profile?.stream_days ?? [];
+  
   return (
     <motion.div
       className="w-full max-w-md mx-auto bg-card shadow-lg rounded-xl overflow-hidden"
@@ -75,11 +79,11 @@ export function ProfileCard({
         )}
 
         {/* Categories */}
-        {profile.categories && profile.categories.length > 0 && (
+        {categories.length > 0 && (
           <div>
             <h3 className="text-sm font-medium mb-2">Categorías</h3>
             <div className="flex flex-wrap gap-2">
-              {(profile.categories || []).map((category) => (
+              {categories.map((category) => (
                 <Badge key={category} variant="secondary">
                   {category}
                 </Badge>
@@ -89,11 +93,11 @@ export function ProfileCard({
         )}
 
         {/* Stream Schedule */}
-        {((profile.stream_days && profile.stream_days.length > 0) || profile.stream_time) && (
+        {(streamDays.length > 0 || profile.stream_time) && (
           <div>
             <h3 className="text-sm font-medium mb-2">Horario</h3>
             <StreamSchedule
-              days={profile.stream_days || []}
+              days={streamDays}
               time={profile.stream_time}
             />
           </div>
