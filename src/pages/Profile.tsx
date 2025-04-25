@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/MobileLayout";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
@@ -15,7 +16,7 @@ import { StreamSchedule } from "@/components/StreamSchedule";
 import useStore from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
 import { TWITCH_CATEGORIES, WEEK_DAYS } from "@/lib/constants";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const Profile = () => {

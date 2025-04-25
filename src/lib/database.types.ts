@@ -1,3 +1,4 @@
+
 export type Json =
   | string
   | number
@@ -18,7 +19,11 @@ export interface Database {
           description: string | null
           created_at: string
           updated_at: string | null
-          twitch_id: string | null  // Explicitly mark as nullable
+          twitch_id: string | null
+          categories: string[] | null
+          stream_days: string[] | null
+          stream_time: string | null
+          twitch_url: string | null
         }
         Insert: {
           id: string
@@ -28,7 +33,11 @@ export interface Database {
           description?: string | null
           created_at?: string
           updated_at?: string | null
-          twitch_id?: string | null  // Optional during insertion
+          twitch_id?: string | null
+          categories?: string[] | null
+          stream_days?: string[] | null
+          stream_time?: string | null
+          twitch_url?: string | null
         }
         Update: {
           id?: string
@@ -38,7 +47,11 @@ export interface Database {
           description?: string | null
           created_at?: string
           updated_at?: string | null
-          twitch_id?: string | null  // Optional during update
+          twitch_id?: string | null
+          categories?: string[] | null
+          stream_days?: string[] | null
+          stream_time?: string | null
+          twitch_url?: string | null
         }
       }
       swipes: {
