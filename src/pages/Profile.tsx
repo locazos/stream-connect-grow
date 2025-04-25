@@ -170,7 +170,7 @@ const Profile = () => {
                 <Textarea
                   id="description"
                   name="description"
-                  value={formData.description}
+                  value={formData.description || ""}
                   onChange={handleChange}
                   placeholder="Cuéntanos sobre ti y tu canal"
                   rows={4}
@@ -186,7 +186,7 @@ const Profile = () => {
                       role="combobox"
                       className="w-full justify-between"
                     >
-                      {formData.categories.length > 0
+                      {formData.categories && formData.categories.length > 0
                         ? `${formData.categories.length} categorías seleccionadas`
                         : "Seleccionar categorías"}
                       <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -206,7 +206,7 @@ const Profile = () => {
                             <Check
                               className={cn(
                                 "mr-2 h-4 w-4",
-                                formData.categories.includes(category)
+                                formData.categories && formData.categories.includes(category)
                                   ? "opacity-100"
                                   : "opacity-0"
                               )}
@@ -219,7 +219,7 @@ const Profile = () => {
                   </PopoverContent>
                 </Popover>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {formData.categories.map((category) => (
+                  {(formData.categories || []).map((category) => (
                     <Badge
                       key={category}
                       variant="secondary"
@@ -291,7 +291,7 @@ const Profile = () => {
                     Categorías
                   </h2>
                   <div className="flex flex-wrap gap-2">
-                    {profile.categories.map((category) => (
+                    {(profile.categories || []).map((category) => (
                       <Badge key={category} variant="secondary">
                         {category}
                       </Badge>
@@ -300,7 +300,7 @@ const Profile = () => {
                 </div>
               )}
 
-              {(profile.stream_days?.length > 0 || profile.stream_time) && (
+              {((profile.stream_days && profile.stream_days.length > 0) || profile.stream_time) && (
                 <div>
                   <h2 className="text-sm font-medium text-muted-foreground mb-2">
                     Horario

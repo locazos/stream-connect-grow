@@ -9,7 +9,7 @@ interface StreamScheduleProps {
   className?: string;
 }
 
-export function StreamSchedule({ days, time, className = "" }: StreamScheduleProps) {
+export function StreamSchedule({ days = [], time, className = "" }: StreamScheduleProps) {
   if (!days.length && !time) return null;
 
   return (

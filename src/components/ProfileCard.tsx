@@ -1,3 +1,4 @@
+
 import { motion } from "framer-motion";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
 import { Badge } from "@/components/ui/badge";
@@ -78,7 +79,7 @@ export function ProfileCard({
           <div>
             <h3 className="text-sm font-medium mb-2">Categorías</h3>
             <div className="flex flex-wrap gap-2">
-              {profile.categories.map((category) => (
+              {(profile.categories || []).map((category) => (
                 <Badge key={category} variant="secondary">
                   {category}
                 </Badge>
@@ -88,7 +89,7 @@ export function ProfileCard({
         )}
 
         {/* Stream Schedule */}
-        {(profile.stream_days?.length > 0 || profile.stream_time) && (
+        {((profile.stream_days && profile.stream_days.length > 0) || profile.stream_time) && (
           <div>
             <h3 className="text-sm font-medium mb-2">Horario</h3>
             <StreamSchedule
