@@ -26,9 +26,8 @@ export function ProfileView({ profile, onEdit, onLogout }: ProfileViewProps) {
       <div className="relative w-24 h-24">
         <AvatarWithFallback 
           src={profile.avatar_url || undefined} 
-          fallback={profile.username?.[0]?.toUpperCase() || 'U'}
+          username={profile.username || "User"}
           className="w-24 h-24 border-2 border-primary/20"
-          alt={profile.username || "User avatar"}
         />
       </div>
 
