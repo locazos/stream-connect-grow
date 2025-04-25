@@ -7,6 +7,7 @@ import { useProfileForm } from "@/hooks/useProfileForm";
 import { ProfileView } from "@/components/profile/ProfileView";
 import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 import { useNavigate } from "react-router-dom";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -22,7 +23,7 @@ const Profile = () => {
     handleRemoveCategory,
     handleSubmit,
     setFormData,
-    PREDEFINED_CATEGORIES,
+    TWITCH_CATEGORIES,
   } = useProfileForm(profile);
 
   useEffect(() => {
@@ -36,11 +37,49 @@ const Profile = () => {
     navigate("/login");
   };
 
-  if (!profile) {
+  if (!user) {
     return (
       <MobileLayout>
         <div className="flex flex-col items-center justify-center h-screen text-white">
-          <p>📄 Cargando perfil...</p>
+          <p>🔒 Inicia sesión para ver tu perfil</p>
+        </div>
+      </MobileLayout>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <MobileLayout>
+        <div className="p-4 max-w-md mx-auto">
+          <div className="space-y-6 pt-2 pb-8">
+            {/* Avatar skeleton */}
+            <div className="flex justify-center">
+              <Skeleton className="w-24 h-24 rounded-full" />
+            </div>
+            
+            {/* Username skeleton */}
+            <div className="space-y-2 flex flex-col items-center">
+              <Skeleton className="h-8 w-40" />
+              <Skeleton className="h-4 w-60" />
+            </div>
+            
+            {/* Content skeletons */}
+            <Skeleton className="h-32 w-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-28" />
+              <div className="flex flex-wrap gap-2">
+                <Skeleton className="h-6 w-20" />
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-6 w-16" />
+              </div>
+            </div>
+            
+            {/* Buttons skeleton */}
+            <div className="flex gap-4 pt-4">
+              <Skeleton className="h-10 flex-1" />
+              <Skeleton className="h-10 flex-1" />
+            </div>
+          </div>
         </div>
       </MobileLayout>
     );
@@ -49,14 +88,13 @@ const Profile = () => {
   return (
     <MobileLayout>
       <div className="p-4 max-w-md mx-auto">
-        <div className="text-center mb-6">
+        <div className="mb-6">
           {isEditing ? (
             <ProfileEditForm
               formData={formData}
               isLoading={isLoading}
-              PREDEFINED_CATEGORIES={PREDEFINED_CATEGORIES}
               onSubmit={(e) => {
-                handleSubmit(e, user!.id).then(() => setIsEditing(false));
+                handleSubmit(e, user.id).then(() => setIsEditing(false));
               }}
               onChange={handleChange}
               onAddCategory={handleAddCategory}

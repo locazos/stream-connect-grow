@@ -4,23 +4,10 @@ import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
 import { Database } from "@/lib/database.types";
 import useStore from "@/store/useStore";
+import { TWITCH_CATEGORIES } from "@/lib/constants";
 
 // Define the Profile type from the Database type
 type Profile = Database['public']['Tables']['profiles']['Row'];
-
-// Predefined Twitch categories
-const PREDEFINED_CATEGORIES = [
-  'Just Chatting',
-  'Fortnite',
-  'Valorant',
-  'League of Legends', 
-  'GTA V',
-  'Call of Duty',
-  'Minecraft',
-  'FIFA',
-  'Among Us',
-  'Apex Legends'
-];
 
 interface ProfileFormData {
   username: string;
@@ -79,6 +66,17 @@ export function useProfileForm(initialProfile: Profile | null) {
 
   const handleSubmit = async (e: React.FormEvent, userId: string) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!formData.description.trim()) {
+      toast({
+        title: "Error",
+        description: "La descripción es obligatoria",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     setIsLoading(true);
 
     try {
@@ -88,8 +86,8 @@ export function useProfileForm(initialProfile: Profile | null) {
           username: formData.username,
           description: formData.description,
           categories: formData.categories,
-          start_time: formData.start_time,
-          end_time: formData.end_time,
+          start_time: formData.start_time || null,
+          end_time: formData.end_time || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", userId);
@@ -138,6 +136,6 @@ export function useProfileForm(initialProfile: Profile | null) {
     handleRemoveCategory,
     handleSubmit,
     setFormData,
-    PREDEFINED_CATEGORIES,
+    TWITCH_CATEGORIES,
   };
 }
