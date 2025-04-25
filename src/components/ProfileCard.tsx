@@ -27,9 +27,13 @@ export function ProfileCard({
   dragConstraints,
   onDragEnd,
 }: ProfileCardProps) {
-  // Ensure all array properties have safe fallbacks
-  const categories = profile?.categories ?? [];
-  const streamDays = profile?.stream_days ?? [];
+  if (!profile) {
+    return null; // No renderizar si profile es null o undefined
+  }
+  
+  // Garantizar que todas las propiedades de array tengan valores seguros
+  const categories = Array.isArray(profile.categories) ? profile.categories : [];
+  const streamDays = Array.isArray(profile.stream_days) ? profile.stream_days : [];
   
   return (
     <motion.div

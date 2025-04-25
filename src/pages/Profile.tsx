@@ -24,11 +24,11 @@ const Profile = () => {
   const { profile, setProfile } = useStore();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    username: profile?.username || "",
-    description: profile?.description || "",
-    categories: profile?.categories ?? [],
-    stream_days: profile?.stream_days ?? [],
-    stream_time: profile?.stream_time || "",
+    username: "",
+    description: "",
+    categories: [] as string[],
+    stream_days: [] as string[],
+    stream_time: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -39,8 +39,8 @@ const Profile = () => {
       setFormData({
         username: profile.username || "",
         description: profile.description || "",
-        categories: profile.categories ?? [],
-        stream_days: profile.stream_days ?? [],
+        categories: Array.isArray(profile.categories) ? profile.categories : [],
+        stream_days: Array.isArray(profile.stream_days) ? profile.stream_days : [],
         stream_time: profile.stream_time || "",
       });
     }
@@ -61,7 +61,15 @@ const Profile = () => {
         return;
       }
 
-      setProfile(data);
+      // Asegurarse de que todas las propiedades de array tengan valores seguros
+      const safeProfile = {
+        ...data,
+        categories: Array.isArray(data.categories) ? data.categories : [],
+        stream_days: Array.isArray(data.stream_days) ? data.stream_days : [],
+        games: Array.isArray(data.games) ? data.games : []
+      };
+      
+      setProfile(safeProfile);
     };
 
     fetchProfile();
@@ -78,17 +86,22 @@ const Profile = () => {
   };
 
   const handleStreamDayToggle = (day: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      stream_days: prev.stream_days?.includes(day)
-        ? prev.stream_days.filter((d) => d !== day)
-        : [...(prev.stream_days ?? []), day],
-    }));
+    setFormData((prev) => {
+      // Garantizar que stream_days es siempre un array
+      const currentDays = Array.isArray(prev.stream_days) ? prev.stream_days : [];
+      return {
+        ...prev,
+        stream_days: currentDays.includes(day)
+          ? currentDays.filter((d) => d !== day)
+          : [...currentDays, day],
+      };
+    });
   };
 
   const handleCategorySelect = (category: string) => {
     setFormData((prev) => {
-      const currentCategories = prev.categories ?? [];
+      // Garantizar que categories es siempre un array
+      const currentCategories = Array.isArray(prev.categories) ? prev.categories : [];
       return {
         ...prev,
         categories: currentCategories.includes(category)
@@ -105,14 +118,21 @@ const Profile = () => {
     setIsLoading(true);
 
     try {
+      // Asegurar que los arrays nunca son undefined antes de enviar a Supabase
+      const safeFormData = {
+        ...formData,
+        categories: formData.categories || [],
+        stream_days: formData.stream_days || []
+      };
+
       const { error } = await supabase
         .from("profiles")
         .update({
-          username: formData.username,
-          description: formData.description,
-          categories: formData.categories ?? [],
-          stream_days: formData.stream_days ?? [],
-          stream_time: formData.stream_time,
+          username: safeFormData.username,
+          description: safeFormData.description,
+          categories: safeFormData.categories,
+          stream_days: safeFormData.stream_days,
+          stream_time: safeFormData.stream_time,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
@@ -120,11 +140,10 @@ const Profile = () => {
       if (error) throw error;
 
       if (profile) {
+        // Actualizar el store con los datos seguros
         setProfile({
           ...profile,
-          ...formData,
-          categories: formData.categories ?? [],
-          stream_days: formData.stream_days ?? [],
+          ...safeFormData,
           updated_at: new Date().toISOString(),
         });
       }
@@ -147,21 +166,22 @@ const Profile = () => {
     }
   };
 
-  if (!user || !profile) {
+  // No renderizar nada hasta que tengamos el usuario
+  if (!user) {
     return (
       <MobileLayout>
         <div className="flex flex-col items-center justify-center h-screen">
-          <p>Cargando perfil...</p>
+          <p>Cargando usuario...</p>
         </div>
       </MobileLayout>
     );
   }
 
-  // Safe access to array properties
-  const categories = profile?.categories ?? [];
-  const streamDays = profile?.stream_days ?? [];
-  const formCategories = formData?.categories ?? [];
-  const formStreamDays = formData?.stream_days ?? [];
+  // Garantizar acceso seguro a las propiedades de array
+  const categories = profile?.categories ? [...profile.categories] : [];
+  const streamDays = profile?.stream_days ? [...profile.stream_days] : [];
+  const formCategories = formData.categories || [];
+  const formStreamDays = formData.stream_days || [];
 
   return (
     <MobileLayout>
@@ -169,8 +189,8 @@ const Profile = () => {
         <div className="text-center mb-6">
           <div className="flex justify-center mb-4">
             <AvatarWithFallback
-              src={profile.avatar_url}
-              username={profile.username}
+              src={profile?.avatar_url}
+              username={profile?.username || ""}
               className="h-24 w-24"
             />
           </div>
@@ -305,7 +325,7 @@ const Profile = () => {
           ) : (
             <div className="space-y-6">
               <div>
-                <h1 className="text-2xl font-bold">{profile.username}</h1>
+                <h1 className="text-2xl font-bold">{profile?.username}</h1>
                 <p className="text-muted-foreground">{user.email}</p>
               </div>
 
@@ -324,14 +344,14 @@ const Profile = () => {
                 </div>
               )}
 
-              {(streamDays.length > 0 || profile.stream_time) && (
+              {(streamDays.length > 0 || profile?.stream_time) && (
                 <div>
                   <h2 className="text-sm font-medium text-muted-foreground mb-2">
                     Horario
                   </h2>
                   <StreamSchedule
                     days={streamDays}
-                    time={profile.stream_time}
+                    time={profile?.stream_time}
                   />
                 </div>
               )}
@@ -341,14 +361,14 @@ const Profile = () => {
                   Descripción
                 </h2>
                 <p className="text-sm bg-muted/50 p-3 rounded-md">
-                  {profile.description || "Sin descripción"}
+                  {profile?.description || "Sin descripción"}
                 </p>
               </div>
 
-              {profile.twitch_url && (
+              {profile?.twitch_url && (
                 <div>
                   <a
-                    href={profile.twitch_url}
+                    href={profile?.twitch_url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
