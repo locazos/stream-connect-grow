@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/MobileLayout";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
@@ -7,44 +6,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { StreamSchedule } from "@/components/StreamSchedule";
 import useStore from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
-import { TWITCH_CATEGORIES, WEEK_DAYS } from "@/lib/constants";
-import { Check, ChevronsUpDown, ExternalLink } from "lucide-react";
-import { cn } from "@/lib/utils";
 
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { profile, setProfile } = useStore();
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    username: "",
-    description: "",
-    categories: [] as string[],
-    stream_days: [] as string[],
-    stream_time: "",
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-
-  // Update form data when profile changes
-  useEffect(() => {
-    if (profile) {
-      setFormData({
-        username: profile.username || "",
-        description: profile.description || "",
-        categories: Array.isArray(profile.categories) ? profile.categories : [],
-        stream_days: Array.isArray(profile.stream_days) ? profile.stream_days : [],
-        stream_time: profile.stream_time || "",
-      });
-    }
-  }, [profile]);
+  console.log("🔎 USER:", user);
+  console.log("🔎 PROFILE:", profile);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -61,15 +32,12 @@ const Profile = () => {
         return;
       }
 
-      // Asegurarse de que todas las propiedades de array tengan valores seguros
-      const safeProfile = {
+      setProfile({
         ...data,
+        games: Array.isArray(data.games) ? data.games : [],
         categories: Array.isArray(data.categories) ? data.categories : [],
         stream_days: Array.isArray(data.stream_days) ? data.stream_days : [],
-        games: Array.isArray(data.games) ? data.games : []
-      };
-      
-      setProfile(safeProfile);
+      });
     };
 
     fetchProfile();
@@ -80,70 +48,74 @@ const Profile = () => {
     console.log("📄 profile:", profile);
   }, [user, profile]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    username: profile?.username || "",
+    description: profile?.description || "",
+    game: "",
+    games: Array.isArray(profile?.games) ? profile.games : [],
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleStreamDayToggle = (day: string) => {
-    setFormData((prev) => {
-      // Garantizar que stream_days es siempre un array
-      const currentDays = Array.isArray(prev.stream_days) ? prev.stream_days : [];
-      return {
+  const handleAddGame = () => {
+    if (!formData.game.trim()) return;
+
+    if (!formData.games.includes(formData.game)) {
+      setFormData((prev) => ({
         ...prev,
-        stream_days: currentDays.includes(day)
-          ? currentDays.filter((d) => d !== day)
-          : [...currentDays, day],
-      };
-    });
+        games: [...prev.games, formData.game],
+        game: "",
+      }));
+    } else {
+      toast({
+        title: "Juego duplicado",
+        description: "Ya has añadido este juego",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleCategorySelect = (category: string) => {
-    setFormData((prev) => {
-      // Garantizar que categories es siempre un array
-      const currentCategories = Array.isArray(prev.categories) ? prev.categories : [];
-      return {
-        ...prev,
-        categories: currentCategories.includes(category)
-          ? currentCategories.filter((c) => c !== category)
-          : [...currentCategories, category],
-      };
-    });
+  const handleRemoveGame = (gameToRemove) => {
+    setFormData((prev) => ({
+      ...prev,
+      games: prev.games.filter((game) => game !== gameToRemove),
+    }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return;
-
     setIsLoading(true);
 
     try {
-      // Asegurar que los arrays nunca son undefined antes de enviar a Supabase
-      const safeFormData = {
-        ...formData,
-        categories: formData.categories || [],
-        stream_days: formData.stream_days || []
-      };
-
       const { error } = await supabase
         .from("profiles")
         .update({
-          username: safeFormData.username,
-          description: safeFormData.description,
-          categories: safeFormData.categories,
-          stream_days: safeFormData.stream_days,
-          stream_time: safeFormData.stream_time,
+          username: formData.username,
+          description: formData.description,
+          games: formData.games,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating profile:", error);
+        toast({ title: "Error", description: "No se pudo actualizar el perfil", variant: "destructive" });
+        return;
+      }
 
       if (profile) {
-        // Actualizar el store con los datos seguros
         setProfile({
           ...profile,
-          ...safeFormData,
+          username: formData.username,
+          description: formData.description,
+          games: formData.games,
           updated_at: new Date().toISOString(),
         });
       }
@@ -155,44 +127,33 @@ const Profile = () => {
 
       setIsEditing(false);
     } catch (error) {
-      console.error("Error updating profile:", error);
-      toast({
-        title: "Error",
-        description: "No se pudo actualizar el perfil",
-        variant: "destructive",
-      });
+      console.error("Error in handleSubmit:", error);
+      toast({ title: "Error", description: "Ocurrió un error inesperado", variant: "destructive" });
     } finally {
       setIsLoading(false);
     }
   };
 
-  // No renderizar nada hasta que tengamos el usuario
-  if (!user) {
+  const handleLogout = async () => {
+    await signOut();
+  };
+
+  if (!user || !profile) {
     return (
       <MobileLayout>
-        <div className="flex flex-col items-center justify-center h-screen">
-          <p>Cargando usuario...</p>
+        <div className="flex flex-col items-center justify-center h-screen text-white">
+          <p>📄 Cargando perfil...</p>
         </div>
       </MobileLayout>
     );
   }
-
-  // Garantizar acceso seguro a las propiedades de array
-  const categories = profile?.categories ? [...profile.categories] : [];
-  const streamDays = profile?.stream_days ? [...profile.stream_days] : [];
-  const formCategories = formData.categories || [];
-  const formStreamDays = formData.stream_days || [];
 
   return (
     <MobileLayout>
       <div className="p-4 max-w-md mx-auto">
         <div className="text-center mb-6">
           <div className="flex justify-center mb-4">
-            <AvatarWithFallback
-              src={profile?.avatar_url}
-              username={profile?.username || ""}
-              className="h-24 w-24"
-            />
+            <AvatarWithFallback src={profile.avatar_url} username={profile.username} className="h-24 w-24" />
           </div>
 
           {isEditing ? (
@@ -214,7 +175,7 @@ const Profile = () => {
                 <Textarea
                   id="description"
                   name="description"
-                  value={formData.description || ""}
+                  value={formData.description}
                   onChange={handleChange}
                   placeholder="Cuéntanos sobre ti y tu canal"
                   rows={4}
@@ -222,169 +183,63 @@ const Profile = () => {
               </div>
 
               <div className="space-y-2">
-                <Label>Categorías</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant="outline"
-                      role="combobox"
-                      className="w-full justify-between"
-                    >
-                      {formCategories.length > 0
-                        ? `${formCategories.length} categorías seleccionadas`
-                        : "Seleccionar categorías"}
-                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-full p-0">
-                    <Command>
-                      <CommandInput placeholder="Buscar categoría..." />
-                      <CommandEmpty>No se encontraron categorías.</CommandEmpty>
-                      <CommandGroup>
-                        {TWITCH_CATEGORIES.map((category) => (
-                          <CommandItem
-                            key={category}
-                            value={category}
-                            onSelect={() => handleCategorySelect(category)}
-                          >
-                            <Check
-                              className={cn(
-                                "mr-2 h-4 w-4",
-                                formCategories.includes(category)
-                                  ? "opacity-100"
-                                  : "opacity-0"
-                              )}
-                            />
-                            {category}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
-                <div className="flex flex-wrap gap-2 mt-2">
-                  {formCategories.map((category) => (
-                    <Badge
-                      key={category}
-                      variant="secondary"
-                      className="cursor-pointer"
-                      onClick={() => handleCategorySelect(category)}
-                    >
-                      {category} ×
+                <Label>Juegos</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {(Array.isArray(formData.games) ? formData.games : []).map((game, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {game}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveGame(game)}
+                        className="ml-1 h-4 w-4 rounded-full bg-muted-foreground/30 inline-flex items-center justify-center hover:bg-muted-foreground/50"
+                      >
+                        <span className="sr-only">Remove</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 6 6 18"></path>
+                          <path d="m6 6 12 12"></path>
+                        </svg>
+                      </button>
                     </Badge>
                   ))}
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label>Días de stream</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {WEEK_DAYS.map((day) => (
-                    <div key={day} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={day}
-                        checked={formStreamDays.includes(day)}
-                        onCheckedChange={() => handleStreamDayToggle(day)}
-                      />
-                      <label
-                        htmlFor={day}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {day}
-                      </label>
-                    </div>
-                  ))}
+                <div className="flex gap-2">
+                  <Input id="game" name="game" value={formData.game} onChange={handleChange} placeholder="Añadir juego" />
+                  <Button type="button" variant="secondary" onClick={handleAddGame} className="shrink-0">Añadir</Button>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="stream_time">Horario habitual</Label>
-                <Input
-                  id="stream_time"
-                  name="stream_time"
-                  value={formData.stream_time || ""}
-                  onChange={handleChange}
-                  placeholder="20:00 - 00:00"
-                />
-              </div>
-
               <div className="flex justify-between pt-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsEditing(false)}
-                  disabled={isLoading}
-                >
-                  Cancelar
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? "Guardando..." : "Guardar cambios"}
-                </Button>
+                <Button type="button" variant="outline" onClick={() => setIsEditing(false)} disabled={isLoading}>Cancelar</Button>
+                <Button type="submit" disabled={isLoading}>{isLoading ? "Guardando..." : "Guardar cambios"}</Button>
               </div>
             </form>
           ) : (
             <div className="space-y-6">
               <div>
-                <h1 className="text-2xl font-bold">{profile?.username}</h1>
-                <p className="text-muted-foreground">{user.email}</p>
+                <h1 className="text-2xl font-bold">{profile.username}</h1>
+                <p className="text-muted-foreground">{user?.email}</p>
               </div>
 
-              {categories.length > 0 && (
+              {Array.isArray(profile.games) && profile.games.length > 0 && (
                 <div>
-                  <h2 className="text-sm font-medium text-muted-foreground mb-2">
-                    Categorías
-                  </h2>
+                  <h2 className="text-sm font-medium text-muted-foreground mb-2">Juegos</h2>
                   <div className="flex flex-wrap gap-2">
-                    {categories.map((category) => (
-                      <Badge key={category} variant="secondary">
-                        {category}
-                      </Badge>
+                    {profile.games.map((game, index) => (
+                      <Badge key={index} variant="secondary">{game}</Badge>
                     ))}
                   </div>
                 </div>
               )}
 
-              {(streamDays.length > 0 || profile?.stream_time) && (
-                <div>
-                  <h2 className="text-sm font-medium text-muted-foreground mb-2">
-                    Horario
-                  </h2>
-                  <StreamSchedule
-                    days={streamDays}
-                    time={profile?.stream_time}
-                  />
-                </div>
-              )}
-
               <div>
-                <h2 className="text-sm font-medium text-muted-foreground mb-2">
-                  Descripción
-                </h2>
-                <p className="text-sm bg-muted/50 p-3 rounded-md">
-                  {profile?.description || "Sin descripción"}
-                </p>
+                <h2 className="text-sm font-medium text-muted-foreground mb-2">Descripción</h2>
+                <p className="text-sm bg-muted/50 p-3 rounded-md">{profile.description || "Sin descripción"}</p>
               </div>
 
-              {profile?.twitch_url && (
-                <div>
-                  <a
-                    href={profile?.twitch_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
-                  >
-                    Ver canal <ExternalLink className="w-4 h-4" />
-                  </a>
-                </div>
-              )}
-
               <div className="flex justify-between pt-4">
-                <Button variant="outline" onClick={signOut}>
-                  Cerrar sesión
-                </Button>
-                <Button onClick={() => setIsEditing(true)}>
-                  Editar perfil
-                </Button>
+                <Button variant="outline" onClick={handleLogout}>Cerrar sesión</Button>
+                <Button onClick={() => setIsEditing(true)}>Editar perfil</Button>
               </div>
             </div>
           )}
