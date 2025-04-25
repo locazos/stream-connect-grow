@@ -2,8 +2,11 @@
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabase";
-import { Profile } from "@/lib/database.types";
+import { Database } from "@/lib/database.types";
 import useStore from "@/store/useStore";
+
+// Define the Profile type from the Database type
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface ProfileFormData {
   username: string;

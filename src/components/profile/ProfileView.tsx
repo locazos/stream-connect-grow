@@ -2,8 +2,11 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { StreamSchedule } from "@/components/StreamSchedule";
-import { Profile } from "@/lib/database.types";
+import { Database } from "@/lib/database.types";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
+
+// Define the Profile type from the Database type
+type Profile = Database['public']['Tables']['profiles']['Row'];
 
 interface ProfileViewProps {
   profile: Profile;
