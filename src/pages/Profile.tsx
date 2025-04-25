@@ -10,6 +10,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import useStore from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
+import { StreamSchedule } from "@/components/StreamSchedule";
+import { StreamScheduleEditor } from "@/components/StreamScheduleEditor";
 
 const Profile = () => {
   const { user, signOut } = useAuth();
@@ -20,6 +22,10 @@ const Profile = () => {
     description: "",
     game: "",
     games: [] as string[],
+    category: "",
+    categories: [] as string[],
+    stream_days: [] as string[],
+    stream_time: "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -42,6 +48,8 @@ const Profile = () => {
       const safeProfile = {
         ...data,
         games: Array.isArray(data.games) ? data.games : [],
+        categories: Array.isArray(data.categories) ? data.categories : [],
+        stream_days: Array.isArray(data.stream_days) ? data.stream_days : [],
       };
 
       setProfile(safeProfile);
@@ -50,6 +58,10 @@ const Profile = () => {
         description: safeProfile.description || "",
         game: "",
         games: safeProfile.games || [],
+        category: "",
+        categories: safeProfile.categories || [],
+        stream_days: safeProfile.stream_days || [],
+        stream_time: safeProfile.stream_time || "",
       });
     };
 
@@ -86,6 +98,31 @@ const Profile = () => {
     }));
   };
 
+  const handleAddCategory = () => {
+    if (!formData.category.trim()) return;
+
+    if (!formData.categories.includes(formData.category)) {
+      setFormData((prev) => ({
+        ...prev,
+        categories: [...prev.categories, formData.category],
+        category: "",
+      }));
+    } else {
+      toast({
+        title: "Categoría duplicada",
+        description: "Ya has añadido esta categoría",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemoveCategory = (categoryToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      categories: prev.categories.filter((category) => category !== categoryToRemove),
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
@@ -99,6 +136,9 @@ const Profile = () => {
           username: formData.username,
           description: formData.description,
           games: formData.games,
+          categories: formData.categories,
+          stream_days: formData.stream_days,
+          stream_time: formData.stream_time,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
@@ -118,6 +158,9 @@ const Profile = () => {
         username: formData.username,
         description: formData.description,
         games: formData.games,
+        categories: formData.categories,
+        stream_days: formData.stream_days,
+        stream_time: formData.stream_time,
       });
 
       toast({
@@ -191,6 +234,40 @@ const Profile = () => {
               </div>
 
               <div className="space-y-2">
+                <Label>Categorías</Label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {formData.categories.map((category, index) => (
+                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                      {category}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveCategory(category)}
+                        className="ml-1 h-4 w-4 rounded-full bg-muted-foreground/30 inline-flex items-center justify-center hover:bg-muted-foreground/50"
+                      >
+                        <span className="sr-only">Remove</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 6 6 18" />
+                          <path d="m6 6 12 12" />
+                        </svg>
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    id="category"
+                    name="category"
+                    value={formData.category}
+                    onChange={handleChange}
+                    placeholder="Añadir categoría"
+                  />
+                  <Button type="button" variant="secondary" onClick={handleAddCategory} className="shrink-0">
+                    Añadir
+                  </Button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
                 <Label>Juegos</Label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {formData.games.map((game, index) => (
@@ -224,6 +301,13 @@ const Profile = () => {
                 </div>
               </div>
 
+              <StreamScheduleEditor
+                streamDays={formData.stream_days}
+                streamTime={formData.stream_time}
+                onStreamDaysChange={(days) => setFormData(prev => ({ ...prev, stream_days: days }))}
+                onStreamTimeChange={(time) => setFormData(prev => ({ ...prev, stream_time: time }))}
+              />
+
               <div className="flex justify-between pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsEditing(false)} disabled={isLoading}>
                   Cancelar
@@ -240,6 +324,19 @@ const Profile = () => {
                 <p className="text-muted-foreground">{user?.email}</p>
               </div>
 
+              {profile.categories && profile.categories.length > 0 && (
+                <div>
+                  <h2 className="text-sm font-medium text-muted-foreground mb-2">Categorías</h2>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.categories.map((category, index) => (
+                      <Badge key={index} variant="secondary">
+                        {category}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {profile.games.length > 0 && (
                 <div>
                   <h2 className="text-sm font-medium text-muted-foreground mb-2">Juegos</h2>
@@ -250,6 +347,16 @@ const Profile = () => {
                       </Badge>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {(profile.stream_days?.length > 0 || profile.stream_time) && (
+                <div>
+                  <h2 className="text-sm font-medium text-muted-foreground mb-2">Horario</h2>
+                  <StreamSchedule
+                    days={profile.stream_days}
+                    time={profile.stream_time}
+                  />
                 </div>
               )}
 
