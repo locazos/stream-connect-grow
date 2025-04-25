@@ -24,6 +24,8 @@ export interface Database {
           stream_days: string[] | null
           stream_time: string | null
           twitch_url: string | null
+          start_time: string | null
+          end_time: string | null
         }
         Insert: {
           id: string
@@ -38,6 +40,8 @@ export interface Database {
           stream_days?: string[] | null
           stream_time?: string | null
           twitch_url?: string | null
+          start_time?: string | null
+          end_time?: string | null
         }
         Update: {
           id?: string
@@ -52,6 +56,8 @@ export interface Database {
           stream_days?: string[] | null
           stream_time?: string | null
           twitch_url?: string | null
+          start_time?: string | null
+          end_time?: string | null
         }
       }
       swipes: {
