@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/MobileLayout";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
@@ -7,162 +6,138 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { StreamSchedule } from "@/components/StreamSchedule";
 import useStore from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
+import { TWITCH_CATEGORIES, WEEK_DAYS } from "@/lib/constants";
+import { Check, ChevronsUpDown } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { profile, setProfile } = useStore();
-  console.log("🔎 USER:", user);
-  console.log("🔎 PROFILE:", profile);
-  
-useEffect(() => {
-  const fetchProfile = async () => {
-    if (!user || profile) return;
-
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    if (error) {
-      console.error("❌ Error loading profile:", error.message);
-      return;
-    }
-
-    setProfile(data);
-  };
-
-  fetchProfile();
-}, [user, profile, setProfile]);
-
-useEffect(() => {
-  console.log("👤 user:", user);
-  console.log("📄 profile:", profile);
-}, [user, profile]);
-
-
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     username: profile?.username || "",
     description: profile?.description || "",
-    game: "",
-    games: profile?.games || [],
+    categories: profile?.categories || [],
+    stream_days: profile?.stream_days || [],
+    stream_time: profile?.stream_time || "",
   });
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  
-  // Handle form input change
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!user || profile) return;
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+
+      if (error) {
+        console.error("❌ Error loading profile:", error.message);
+        return;
+      }
+
+      setProfile(data);
+    };
+
+    fetchProfile();
+  }, [user, profile, setProfile]);
+
+  useEffect(() => {
+    console.log("👤 user:", user);
+    console.log("📄 profile:", profile);
+  }, [user, profile]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
-  
-  // Add a game to the list
-  const handleAddGame = () => {
-    if (!formData.game.trim()) return;
-    
-    if (!formData.games.includes(formData.game)) {
-      setFormData((prev) => ({
-        ...prev,
-        games: [...prev.games, formData.game],
-        game: "",
-      }));
-    } else {
-      toast({
-        title: "Juego duplicado",
-        description: "Ya has añadido este juego",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  // Remove a game from the list
-  const handleRemoveGame = (gameToRemove: string) => {
+
+  const handleStreamDayToggle = (day: string) => {
     setFormData((prev) => ({
       ...prev,
-      games: prev.games.filter((game) => game !== gameToRemove),
+      stream_days: prev.stream_days.includes(day)
+        ? prev.stream_days.filter((d) => d !== day)
+        : [...prev.stream_days, day],
     }));
   };
-  
-  // Handle form submission
+
+  const handleCategorySelect = (category: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      categories: prev.categories.includes(category)
+        ? prev.categories.filter((c) => c !== category)
+        : [...prev.categories, category],
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!user) return;
-    
+
     setIsLoading(true);
-    
+
     try {
       const { error } = await supabase
         .from("profiles")
         .update({
           username: formData.username,
           description: formData.description,
-          games: formData.games,
+          categories: formData.categories,
+          stream_days: formData.stream_days,
+          stream_time: formData.stream_time,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
-      
-      if (error) {
-        console.error("Error updating profile:", error);
-        toast({
-          title: "Error",
-          description: "No se pudo actualizar el perfil",
-          variant: "destructive",
-        });
-        return;
-      }
-      
-      // Update profile in store
+
+      if (error) throw error;
+
       if (profile) {
         setProfile({
           ...profile,
-          username: formData.username,
-          description: formData.description,
-          games: formData.games,
+          ...formData,
           updated_at: new Date().toISOString(),
         });
       }
-      
+
       toast({
         title: "Perfil actualizado",
         description: "Tu perfil ha sido actualizado correctamente",
       });
-      
+
       setIsEditing(false);
-      
     } catch (error) {
-      console.error("Error in handleSubmit:", error);
+      console.error("Error updating profile:", error);
       toast({
         title: "Error",
-        description: "Ocurrió un error inesperado",
+        description: "No se pudo actualizar el perfil",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
-  
-  // Handle logout
-  const handleLogout = async () => {
-    await signOut();
-  };
-  
+
   if (!user || !profile) {
     return (
       <MobileLayout>
-        <div className="flex flex-col items-center justify-center h-screen text-white">
-          <p>📄 Cargando perfil...</p>
+        <div className="flex flex-col items-center justify-center h-screen">
+          <p>Cargando perfil...</p>
         </div>
       </MobileLayout>
     );
   }
-  
-    
+
   return (
     <MobileLayout>
       <div className="p-4 max-w-md mx-auto">
@@ -174,7 +149,7 @@ useEffect(() => {
               className="h-24 w-24"
             />
           </div>
-          
+
           {isEditing ? (
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="space-y-2">
@@ -188,7 +163,7 @@ useEffect(() => {
                   required
                 />
               </div>
-              
+
               <div className="space-y-2">
                 <Label htmlFor="description">Descripción</Label>
                 <Textarea
@@ -200,57 +175,94 @@ useEffect(() => {
                   rows={4}
                 />
               </div>
-              
+
               <div className="space-y-2">
-                <Label>Juegos</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {formData.games.map((game, index) => (
-                    <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                      {game}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveGame(game)}
-                        className="ml-1 h-4 w-4 rounded-full bg-muted-foreground/30 inline-flex items-center justify-center hover:bg-muted-foreground/50"
-                      >
-                        <span className="sr-only">Remove</span>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="10"
-                          height="10"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M18 6 6 18"></path>
-                          <path d="m6 6 12 12"></path>
-                        </svg>
-                      </button>
+                <Label>Categorías</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                    >
+                      {formData.categories.length > 0
+                        ? `${formData.categories.length} categorías seleccionadas`
+                        : "Seleccionar categorías"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0">
+                    <Command>
+                      <CommandInput placeholder="Buscar categoría..." />
+                      <CommandEmpty>No se encontraron categorías.</CommandEmpty>
+                      <CommandGroup>
+                        {TWITCH_CATEGORIES.map((category) => (
+                          <CommandItem
+                            key={category}
+                            value={category}
+                            onSelect={() => handleCategorySelect(category)}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                formData.categories.includes(category)
+                                  ? "opacity-100"
+                                  : "opacity-0"
+                              )}
+                            />
+                            {category}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {formData.categories.map((category) => (
+                    <Badge
+                      key={category}
+                      variant="secondary"
+                      className="cursor-pointer"
+                      onClick={() => handleCategorySelect(category)}
+                    >
+                      {category} ×
                     </Badge>
                   ))}
                 </div>
-                
-                <div className="flex gap-2">
-                  <Input
-                    id="game"
-                    name="game"
-                    value={formData.game}
-                    onChange={handleChange}
-                    placeholder="Añadir juego"
-                  />
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={handleAddGame}
-                    className="shrink-0"
-                  >
-                    Añadir
-                  </Button>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Días de stream</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  {WEEK_DAYS.map((day) => (
+                    <div key={day} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={day}
+                        checked={formData.stream_days.includes(day)}
+                        onCheckedChange={() => handleStreamDayToggle(day)}
+                      />
+                      <label
+                        htmlFor={day}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {day}
+                      </label>
+                    </div>
+                  ))}
                 </div>
               </div>
-              
+
+              <div className="space-y-2">
+                <Label htmlFor="stream_time">Horario habitual</Label>
+                <Input
+                  id="stream_time"
+                  name="stream_time"
+                  value={formData.stream_time}
+                  onChange={handleChange}
+                  placeholder="20:00 - 00:00"
+                />
+              </div>
+
               <div className="flex justify-between pt-4">
                 <Button
                   type="button"
@@ -269,34 +281,65 @@ useEffect(() => {
             <div className="space-y-6">
               <div>
                 <h1 className="text-2xl font-bold">{profile.username}</h1>
-                <p className="text-muted-foreground">{user?.email}</p>
+                <p className="text-muted-foreground">{user.email}</p>
               </div>
-              
-              {profile.games && profile.games.length > 0 && (
+
+              {profile.categories && profile.categories.length > 0 && (
                 <div>
-                  <h2 className="text-sm font-medium text-muted-foreground mb-2">Juegos</h2>
+                  <h2 className="text-sm font-medium text-muted-foreground mb-2">
+                    Categorías
+                  </h2>
                   <div className="flex flex-wrap gap-2">
-                    {profile.games.map((game, index) => (
-                      <Badge key={index} variant="secondary">
-                        {game}
+                    {profile.categories.map((category) => (
+                      <Badge key={category} variant="secondary">
+                        {category}
                       </Badge>
                     ))}
                   </div>
                 </div>
               )}
-              
+
+              {(profile.stream_days?.length > 0 || profile.stream_time) && (
+                <div>
+                  <h2 className="text-sm font-medium text-muted-foreground mb-2">
+                    Horario
+                  </h2>
+                  <StreamSchedule
+                    days={profile.stream_days || []}
+                    time={profile.stream_time}
+                  />
+                </div>
+              )}
+
               <div>
-                <h2 className="text-sm font-medium text-muted-foreground mb-2">Descripción</h2>
+                <h2 className="text-sm font-medium text-muted-foreground mb-2">
+                  Descripción
+                </h2>
                 <p className="text-sm bg-muted/50 p-3 rounded-md">
                   {profile.description || "Sin descripción"}
                 </p>
               </div>
-              
+
+              {profile.twitch_url && (
+                <div>
+                  <a
+                    href={profile.twitch_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-primary hover:text-primary/80 transition-colors"
+                  >
+                    Ver canal <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              )}
+
               <div className="flex justify-between pt-4">
-                <Button variant="outline" onClick={handleLogout}>
+                <Button variant="outline" onClick={signOut}>
                   Cerrar sesión
                 </Button>
-                <Button onClick={() => setIsEditing(true)}>Editar perfil</Button>
+                <Button onClick={() => setIsEditing(true)}>
+                  Editar perfil
+                </Button>
               </div>
             </div>
           )}

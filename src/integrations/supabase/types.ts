@@ -48,31 +48,43 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          categories: string[] | null
           created_at: string
           description: string | null
           games: string[] | null
           id: string
+          stream_days: string[] | null
+          stream_time: string | null
           twitch_id: string | null
+          twitch_url: string | null
           updated_at: string | null
           username: string
         }
         Insert: {
           avatar_url?: string | null
+          categories?: string[] | null
           created_at?: string
           description?: string | null
           games?: string[] | null
           id: string
+          stream_days?: string[] | null
+          stream_time?: string | null
           twitch_id?: string | null
+          twitch_url?: string | null
           updated_at?: string | null
           username: string
         }
         Update: {
           avatar_url?: string | null
+          categories?: string[] | null
           created_at?: string
           description?: string | null
           games?: string[] | null
           id?: string
+          stream_days?: string[] | null
+          stream_time?: string | null
           twitch_id?: string | null
+          twitch_url?: string | null
           updated_at?: string | null
           username?: string
         }

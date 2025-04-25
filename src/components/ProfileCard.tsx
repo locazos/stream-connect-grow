@@ -1,7 +1,8 @@
-
 import { motion } from "framer-motion";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
 import { Badge } from "@/components/ui/badge";
+import { StreamSchedule } from "@/components/StreamSchedule";
+import { ExternalLink } from "lucide-react";
 import { Database } from "@/lib/database.types";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -37,7 +38,7 @@ export function ProfileCard({
       animate={{ scale: 1, opacity: 1 }}
       transition={{ duration: 0.3 }}
     >
-      {/* Profile avatar/image */}
+      {/* Profile avatar/image section */}
       <div className="h-56 sm:h-64 relative flex items-center justify-center bg-muted overflow-hidden">
         {profile.avatar_url ? (
           <img
@@ -64,30 +65,50 @@ export function ProfileCard({
       </div>
 
       {/* Profile details */}
-      <div className="p-4">
-        {/* Games */}
-        <div className="mb-4">
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">Juegos</h3>
-          <div className="flex flex-wrap gap-2">
-            {profile.games && profile.games.length > 0 ? (
-              profile.games.map((game, index) => (
-                <Badge key={index} variant="secondary">
-                  {game}
-                </Badge>
-              ))
-            ) : (
-              <span className="text-sm text-muted-foreground">No games specified</span>
-            )}
-          </div>
-        </div>
-
+      <div className="p-4 space-y-4">
         {/* Description */}
-        <div>
-          <h3 className="text-sm font-medium text-muted-foreground mb-2">Descripción</h3>
-          <p className="text-sm">
-            {profile.description || "No description provided"}
+        {profile.description && (
+          <p className="text-sm text-muted-foreground">
+            {profile.description}
           </p>
-        </div>
+        )}
+
+        {/* Categories */}
+        {profile.categories && profile.categories.length > 0 && (
+          <div>
+            <h3 className="text-sm font-medium mb-2">Categorías</h3>
+            <div className="flex flex-wrap gap-2">
+              {profile.categories.map((category) => (
+                <Badge key={category} variant="secondary">
+                  {category}
+                </Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Stream Schedule */}
+        {(profile.stream_days?.length > 0 || profile.stream_time) && (
+          <div>
+            <h3 className="text-sm font-medium mb-2">Horario</h3>
+            <StreamSchedule
+              days={profile.stream_days || []}
+              time={profile.stream_time}
+            />
+          </div>
+        )}
+
+        {/* Twitch Link */}
+        {profile.twitch_url && (
+          <a
+            href={profile.twitch_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors"
+          >
+            Ver canal <ExternalLink className="w-4 h-4" />
+          </a>
+        )}
       </div>
 
       {/* Action buttons */}
