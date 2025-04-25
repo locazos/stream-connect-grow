@@ -14,12 +14,19 @@ import { supabase } from "@/lib/supabase";
 const Profile = () => {
   const { user, signOut } = useAuth();
   const { profile, setProfile } = useStore();
-  console.log("🔎 USER:", user);
-  console.log("🔎 PROFILE:", profile);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    username: "",
+    description: "",
+    game: "",
+    games: [] as string[],
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!user || profile) return;
+      if (!user) return;
 
       const { data, error } = await supabase
         .from("profiles")
@@ -32,33 +39,24 @@ const Profile = () => {
         return;
       }
 
-      setProfile({
+      const safeProfile = {
         ...data,
         games: Array.isArray(data.games) ? data.games : [],
-        categories: Array.isArray(data.categories) ? data.categories : [],
-        stream_days: Array.isArray(data.stream_days) ? data.stream_days : [],
+      };
+
+      setProfile(safeProfile);
+      setFormData({
+        username: safeProfile.username || "",
+        description: safeProfile.description || "",
+        game: "",
+        games: safeProfile.games || [],
       });
     };
 
     fetchProfile();
-  }, [user, profile, setProfile]);
+  }, [user, setProfile]);
 
-  useEffect(() => {
-    console.log("👤 user:", user);
-    console.log("📄 profile:", profile);
-  }, [user, profile]);
-
-  const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    username: profile?.username || "",
-    description: profile?.description || "",
-    game: "",
-    games: Array.isArray(profile?.games) ? profile.games : [],
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const { toast } = useToast();
-
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -81,16 +79,17 @@ const Profile = () => {
     }
   };
 
-  const handleRemoveGame = (gameToRemove) => {
+  const handleRemoveGame = (gameToRemove: string) => {
     setFormData((prev) => ({
       ...prev,
       games: prev.games.filter((game) => game !== gameToRemove),
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+
     setIsLoading(true);
 
     try {
@@ -106,19 +105,20 @@ const Profile = () => {
 
       if (error) {
         console.error("Error updating profile:", error);
-        toast({ title: "Error", description: "No se pudo actualizar el perfil", variant: "destructive" });
+        toast({
+          title: "Error",
+          description: "No se pudo actualizar el perfil",
+          variant: "destructive",
+        });
         return;
       }
 
-      if (profile) {
-        setProfile({
-          ...profile,
-          username: formData.username,
-          description: formData.description,
-          games: formData.games,
-          updated_at: new Date().toISOString(),
-        });
-      }
+      setProfile({
+        ...profile!,
+        username: formData.username,
+        description: formData.description,
+        games: formData.games,
+      });
 
       toast({
         title: "Perfil actualizado",
@@ -128,7 +128,11 @@ const Profile = () => {
       setIsEditing(false);
     } catch (error) {
       console.error("Error in handleSubmit:", error);
-      toast({ title: "Error", description: "Ocurrió un error inesperado", variant: "destructive" });
+      toast({
+        title: "Error",
+        description: "Ocurrió un error inesperado",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -153,7 +157,11 @@ const Profile = () => {
       <div className="p-4 max-w-md mx-auto">
         <div className="text-center mb-6">
           <div className="flex justify-center mb-4">
-            <AvatarWithFallback src={profile.avatar_url} username={profile.username} className="h-24 w-24" />
+            <AvatarWithFallback
+              src={profile.avatar_url}
+              username={profile.username}
+              className="h-24 w-24"
+            />
           </div>
 
           {isEditing ? (
@@ -185,7 +193,7 @@ const Profile = () => {
               <div className="space-y-2">
                 <Label>Juegos</Label>
                 <div className="flex flex-wrap gap-2 mb-2">
-                  {(Array.isArray(formData.games) ? formData.games : []).map((game, index) => (
+                  {formData.games.map((game, index) => (
                     <Badge key={index} variant="secondary" className="flex items-center gap-1">
                       {game}
                       <button
@@ -195,23 +203,34 @@ const Profile = () => {
                       >
                         <span className="sr-only">Remove</span>
                         <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 6 6 18"></path>
-                          <path d="m6 6 12 12"></path>
+                          <path d="M18 6 6 18" />
+                          <path d="m6 6 12 12" />
                         </svg>
                       </button>
                     </Badge>
                   ))}
                 </div>
-
                 <div className="flex gap-2">
-                  <Input id="game" name="game" value={formData.game} onChange={handleChange} placeholder="Añadir juego" />
-                  <Button type="button" variant="secondary" onClick={handleAddGame} className="shrink-0">Añadir</Button>
+                  <Input
+                    id="game"
+                    name="game"
+                    value={formData.game}
+                    onChange={handleChange}
+                    placeholder="Añadir juego"
+                  />
+                  <Button type="button" variant="secondary" onClick={handleAddGame} className="shrink-0">
+                    Añadir
+                  </Button>
                 </div>
               </div>
 
               <div className="flex justify-between pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsEditing(false)} disabled={isLoading}>Cancelar</Button>
-                <Button type="submit" disabled={isLoading}>{isLoading ? "Guardando..." : "Guardar cambios"}</Button>
+                <Button type="button" variant="outline" onClick={() => setIsEditing(false)} disabled={isLoading}>
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? "Guardando..." : "Guardar cambios"}
+                </Button>
               </div>
             </form>
           ) : (
@@ -221,12 +240,14 @@ const Profile = () => {
                 <p className="text-muted-foreground">{user?.email}</p>
               </div>
 
-              {Array.isArray(profile.games) && profile.games.length > 0 && (
+              {profile.games.length > 0 && (
                 <div>
                   <h2 className="text-sm font-medium text-muted-foreground mb-2">Juegos</h2>
                   <div className="flex flex-wrap gap-2">
                     {profile.games.map((game, index) => (
-                      <Badge key={index} variant="secondary">{game}</Badge>
+                      <Badge key={index} variant="secondary">
+                        {game}
+                      </Badge>
                     ))}
                   </div>
                 </div>
@@ -234,12 +255,18 @@ const Profile = () => {
 
               <div>
                 <h2 className="text-sm font-medium text-muted-foreground mb-2">Descripción</h2>
-                <p className="text-sm bg-muted/50 p-3 rounded-md">{profile.description || "Sin descripción"}</p>
+                <p className="text-sm bg-muted/50 p-3 rounded-md">
+                  {profile.description || "Sin descripción"}
+                </p>
               </div>
 
               <div className="flex justify-between pt-4">
-                <Button variant="outline" onClick={handleLogout}>Cerrar sesión</Button>
-                <Button onClick={() => setIsEditing(true)}>Editar perfil</Button>
+                <Button variant="outline" onClick={handleLogout}>
+                  Cerrar sesión
+                </Button>
+                <Button onClick={() => setIsEditing(true)}>
+                  Editar perfil
+                </Button>
               </div>
             </div>
           )}
