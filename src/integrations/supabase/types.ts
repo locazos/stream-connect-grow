@@ -51,8 +51,10 @@ export type Database = {
           categories: string[] | null
           created_at: string
           description: string | null
+          end_time: string | null
           games: string[] | null
           id: string
+          start_time: string | null
           stream_days: string[] | null
           stream_time: string | null
           twitch_id: string | null
@@ -65,8 +67,10 @@ export type Database = {
           categories?: string[] | null
           created_at?: string
           description?: string | null
+          end_time?: string | null
           games?: string[] | null
           id: string
+          start_time?: string | null
           stream_days?: string[] | null
           stream_time?: string | null
           twitch_id?: string | null
@@ -79,8 +83,10 @@ export type Database = {
           categories?: string[] | null
           created_at?: string
           description?: string | null
+          end_time?: string | null
           games?: string[] | null
           id?: string
+          start_time?: string | null
           stream_days?: string[] | null
           stream_time?: string | null
           twitch_id?: string | null

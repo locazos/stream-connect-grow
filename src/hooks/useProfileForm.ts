@@ -8,15 +8,28 @@ import useStore from "@/store/useStore";
 // Define the Profile type from the Database type
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
+// Predefined Twitch categories
+const PREDEFINED_CATEGORIES = [
+  'Just Chatting',
+  'Fortnite',
+  'Valorant',
+  'League of Legends', 
+  'GTA V',
+  'Call of Duty',
+  'Minecraft',
+  'FIFA',
+  'Among Us',
+  'Apex Legends'
+];
+
 interface ProfileFormData {
   username: string;
   description: string;
-  game: string;
-  games: string[];
   category: string;
   categories: string[];
-  stream_days: string[];
-  stream_time: string;
+  start_time: string;
+  end_time: string;
+  games: string[];
 }
 
 export function useProfileForm(initialProfile: Profile | null) {
@@ -26,12 +39,11 @@ export function useProfileForm(initialProfile: Profile | null) {
   const [formData, setFormData] = useState<ProfileFormData>({
     username: initialProfile?.username || "",
     description: initialProfile?.description || "",
-    game: "",
-    games: Array.isArray(initialProfile?.games) ? initialProfile.games : [],
     category: "",
     categories: Array.isArray(initialProfile?.categories) ? initialProfile.categories : [],
-    stream_days: Array.isArray(initialProfile?.stream_days) ? initialProfile.stream_days : [],
-    stream_time: initialProfile?.stream_time || "",
+    start_time: initialProfile?.start_time || "",
+    end_time: initialProfile?.end_time || "",
+    games: Array.isArray(initialProfile?.games) ? initialProfile.games : [],
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -39,38 +51,14 @@ export function useProfileForm(initialProfile: Profile | null) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddGame = () => {
-    if (!formData.game.trim()) return;
-
-    if (!formData.games.includes(formData.game)) {
-      setFormData((prev) => ({
-        ...prev,
-        games: [...prev.games, formData.game],
-        game: "",
-      }));
-    } else {
-      toast({
-        title: "Juego duplicado",
-        description: "Ya has añadido este juego",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleRemoveGame = (gameToRemove: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      games: prev.games.filter((game) => game !== gameToRemove),
-    }));
-  };
-
   const handleAddCategory = () => {
     if (!formData.category.trim()) return;
 
-    if (!formData.categories.includes(formData.category)) {
+    const newCategory = formData.category.trim();
+    if (!formData.categories.includes(newCategory)) {
       setFormData((prev) => ({
         ...prev,
-        categories: [...prev.categories, formData.category],
+        categories: [...prev.categories, newCategory],
         category: "",
       }));
     } else {
@@ -99,10 +87,9 @@ export function useProfileForm(initialProfile: Profile | null) {
         .update({
           username: formData.username,
           description: formData.description,
-          games: formData.games,
           categories: formData.categories,
-          stream_days: formData.stream_days,
-          stream_time: formData.stream_time,
+          start_time: formData.start_time,
+          end_time: formData.end_time,
           updated_at: new Date().toISOString(),
         })
         .eq("id", userId);
@@ -121,10 +108,9 @@ export function useProfileForm(initialProfile: Profile | null) {
         ...initialProfile!,
         username: formData.username,
         description: formData.description,
-        games: formData.games,
         categories: formData.categories,
-        stream_days: formData.stream_days,
-        stream_time: formData.stream_time,
+        start_time: formData.start_time,
+        end_time: formData.end_time,
       });
 
       toast({
@@ -142,19 +128,16 @@ export function useProfileForm(initialProfile: Profile | null) {
     } finally {
       setIsLoading(false);
     }
-
-    return isLoading;
   };
 
   return {
     formData,
     isLoading,
     handleChange,
-    handleAddGame,
-    handleRemoveGame,
     handleAddCategory,
     handleRemoveCategory,
     handleSubmit,
     setFormData,
+    PREDEFINED_CATEGORIES,
   };
 }

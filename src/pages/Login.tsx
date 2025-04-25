@@ -11,23 +11,18 @@ const Login = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Check if user is already logged in and redirect accordingly
+  // Redirect logic after login
   useEffect(() => {
     if (user) {
-      if (profile && (profile.description && profile.games && profile.games.length > 0)) {
-        // Profile is complete, redirect to explore
-        navigate("/");
-      } else if (profile) {
-        // Profile exists but is incomplete, redirect to setup
-        navigate("/setup-profile");
-      }
+      // Redirect to profile to complete or view it
+      navigate("/profile");
     }
-  }, [user, profile, navigate]);
+  }, [user, navigate]);
 
   const handleTwitchLogin = async () => {
     try {
       await signInWithTwitch();
-      // Navigation will be handled by the useEffect above once user is set
+      // Navigation will be handled by the useEffect above
     } catch (error) {
       console.error("Twitch login error:", error);
       toast({
