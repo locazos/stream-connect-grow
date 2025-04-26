@@ -4,6 +4,8 @@ import { createUserProfile } from '@/lib/createUserProfile';
 import { useToast } from '@/components/ui/use-toast';
 import type { User, Session } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
+import { fetchUserProfile } from '@/lib/fetchUserProfile';
+
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
