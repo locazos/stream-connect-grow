@@ -1,81 +1,77 @@
 import { useState, useEffect } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-import { createUserProfile, fetchUserProfile } from '@/lib/auth.ts';
-console.log("🧠 createUserProfile importado correctamente:", createUserProfile);
-
+import { supabase } from '@/lib/supabase';
+import { createUserProfile } from '@/lib/createUserProfile';
+import { useToast } from '@/components/ui/use-toast';
+import type { User, Session } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export const useAuthState = () => {
-  const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('❌ Error fetching profile:', error.message);
+        return null;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('❌ Error inesperado en fetchProfile:', error);
+      return null;
+    }
+  };
 
   useEffect(() => {
-    const handleProfileFetch = async (user: User, session: Session) => {
-      const profile = await fetchUserProfile(user.id);
-      console.log("🔍 Resultado de fetchUserProfile:", profile);
-    
-      if (!profile) {
-        console.log("🟨 No profile found for user");
-        console.log("📦 session:", session);
-        console.log("🧑 user:", user);
-    
-        console.log("🚀 Ejecutando createUserProfile con ID:", user.id);
-        const newProfile = await createUserProfile(user);
-        console.log("✅ Resultado de createUserProfile:", newProfile);
-        setProfile(newProfile);
-      } else {
-        console.log("✅ Perfil encontrado:", profile);
-        setProfile(profile);
+    const initializeAuth = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setSession(session);
+        setUser(session?.user || null);
+
+        if (session?.user) {
+          // Creamos el perfil si no existe
+          await createUserProfile(session.user);
+
+          // Cargamos el perfil
+          const profileData = await fetchProfile(session.user.id);
+          setProfile(profileData);
+        }
+      } catch (error) {
+        console.error('❌ Error inicializando sesión:', error);
+      } finally {
+        setLoading(false);
       }
     };
-    
-    
+
+    initializeAuth();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         setSession(session);
         setUser(session?.user || null);
 
-        // 👇 Este es el log que necesitas añadir
-    console.log("🧑 Sesión detectada, user:", session?.user);
-        
         if (session?.user) {
-          setTimeout(() => {
-            if (session?.user) {
-              handleProfileFetch(session.user, session);
-            }
-          }, 0);
-          
+          await createUserProfile(session.user);
+          const profileData = await fetchProfile(session.user.id);
+          setProfile(profileData);
         } else {
           setProfile(null);
         }
-        
-        setLoading(false);
       }
     );
-
-    const getInitialSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          setSession(session);
-          setUser(session.user);
-          await handleProfileFetch(session.user, session);
-        }
-      } catch (error) {
-        console.error('Error getting initial session:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getInitialSession();
 
     return () => {
       subscription.unsubscribe();
