@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
 import { StreamSchedule } from "@/components/StreamSchedule";
+import useStore from "@/store/useStore";
 
 const POPULAR_GAMES = [
   "Fortnite", "Minecraft", "Call of Duty", "League of Legends", 
@@ -17,29 +18,48 @@ const POPULAR_GAMES = [
   "Dota 2", "CS:GO", "Overwatch", "Fall Guys", "Rocket League"
 ];
 
+// Helper function to check if profile has enough data to be considered complete
+const isProfileComplete = (profile: any) => {
+  return profile && 
+    profile.username && 
+    profile.description && 
+    profile.games && 
+    profile.games.length > 0;
+};
+
 const SetupProfile = () => {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { setProfile } = useStore();
   
   const [description, setDescription] = useState("");
   const [selectedGames, setSelectedGames] = useState<string[]>([]);
   const [customGame, setCustomGame] = useState("");
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   
-  // Pre-fill form if profile exists
+  // Check if profile is complete and redirect if needed
   useEffect(() => {
     if (profile) {
+      // Pre-fill form with existing data
       if (profile.description) setDescription(profile.description);
       if (profile.games && profile.games.length > 0) setSelectedGames(profile.games);
       if (profile.stream_days) setSelectedDays(profile.stream_days);
       if (profile.start_time) setStartTime(profile.start_time);
       if (profile.end_time) setEndTime(profile.end_time);
+      
+      // If profile is complete, redirect to profile page
+      if (isProfileComplete(profile)) {
+        navigate("/profile");
+      }
+      
+      setInitialLoading(false);
     }
-  }, [profile]);
+  }, [profile, navigate]);
   
   const toggleGame = (game: string) => {
     if (selectedGames.includes(game)) {
@@ -89,17 +109,20 @@ const SetupProfile = () => {
     setLoading(true);
     
     try {
-      const { error } = await supabase
+      const updatedProfile = {
+        description,
+        games: selectedGames,
+        stream_days: selectedDays,
+        start_time: startTime,
+        end_time: endTime,
+        updated_at: new Date().toISOString(),
+      };
+      
+      const { error, data } = await supabase
         .from('profiles')
-        .update({
-          description,
-          games: selectedGames,
-          stream_days: selectedDays,
-          start_time: startTime,
-          end_time: endTime,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', user.id);
+        .update(updatedProfile)
+        .eq('id', user.id)
+        .select();
       
       if (error) {
         console.error('Error updating profile:', error);
@@ -109,11 +132,21 @@ const SetupProfile = () => {
           variant: "destructive",
         });
       } else {
-        toast({
-          title: "Perfil actualizado",
-          description: "Tu perfil ha sido actualizado correctamente",
-        });
-        navigate("/profile");
+        // Update global state with new profile data
+        if (data && data[0]) {
+          setProfile({
+            ...profile!,
+            ...updatedProfile,
+          });
+          
+          toast({
+            title: "Perfil actualizado",
+            description: "Tu perfil ha sido actualizado correctamente",
+          });
+          
+          // Redirect to profile page
+          navigate("/profile");
+        }
       }
     } catch (error) {
       console.error('Error in form submission:', error);
@@ -127,10 +160,21 @@ const SetupProfile = () => {
     }
   };
   
-  if (!profile) {
+  if (initialLoading) {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center p-6 bg-background">
         <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+      </div>
+    );
+  }
+  
+  if (!profile) {
+    return (
+      <div className="flex min-h-[100dvh] items-center justify-center p-6 bg-background">
+        <div className="text-center space-y-4">
+          <div className="h-8 w-8 mx-auto rounded-full border-2 border-primary border-t-transparent animate-spin"></div>
+          <p className="text-muted-foreground">Cargando perfil...</p>
+        </div>
       </div>
     );
   }
