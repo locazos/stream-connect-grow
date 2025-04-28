@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -35,8 +36,8 @@ const SetupProfile = () => {
       if (profile.description) setDescription(profile.description);
       if (profile.games && profile.games.length > 0) setSelectedGames(profile.games);
       if (profile.stream_days) setSelectedDays(profile.stream_days);
-      if (profile.stream_start_time) setStartTime(profile.stream_start_time);
-      if (profile.stream_end_time) setEndTime(profile.stream_end_time);
+      if (profile.start_time) setStartTime(profile.start_time);
+      if (profile.end_time) setEndTime(profile.end_time);
     }
   }, [profile]);
   
@@ -94,8 +95,8 @@ const SetupProfile = () => {
           description,
           games: selectedGames,
           stream_days: selectedDays,
-          stream_start_time: startTime,
-          stream_end_time: endTime,
+          start_time: startTime,
+          end_time: endTime,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);

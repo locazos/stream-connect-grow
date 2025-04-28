@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/MobileLayout";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
@@ -46,8 +47,8 @@ const Profile = () => {
     games: [],
     categories: [],
     stream_days: [],
-    stream_time_start: "",
-    stream_time_end: "",
+    start_time: "",
+    end_time: "",
   });
 
   useEffect(() => {
@@ -59,8 +60,8 @@ const Profile = () => {
         games: Array.isArray(profile.games) ? profile.games : [],
         categories: Array.isArray(profile.categories) ? profile.categories : [],
         stream_days: Array.isArray(profile.stream_days) ? profile.stream_days : [],
-        stream_time_start: profile.stream_time_start || "",
-        stream_time_end: profile.stream_time_end || "",
+        start_time: profile.start_time || "",
+        end_time: profile.end_time || "",
       });
     }
   }, [profile]);
@@ -128,8 +129,8 @@ const Profile = () => {
           games: formData.games,
           categories: formData.categories,
           stream_days: formData.stream_days,
-          stream_time_start: formData.stream_time_start,
-          stream_time_end: formData.stream_time_end,
+          start_time: formData.start_time,
+          end_time: formData.end_time,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id);
@@ -147,8 +148,8 @@ const Profile = () => {
         games: formData.games,
         categories: formData.categories,
         stream_days: formData.stream_days,
-        stream_time_start: formData.stream_time_start,
-        stream_time_end: formData.stream_time_end,
+        start_time: formData.start_time,
+        end_time: formData.end_time,
         updated_at: new Date().toISOString(),
       });
 

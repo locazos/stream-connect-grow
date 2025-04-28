@@ -35,6 +35,14 @@ export function ProfileCard({
   const categories = Array.isArray(profile.categories) ? profile.categories : [];
   const streamDays = Array.isArray(profile.stream_days) ? profile.stream_days : [];
   
+  // Format time for display
+  let formattedTime = "";
+  if (profile.start_time && profile.end_time) {
+    formattedTime = `${profile.start_time} - ${profile.end_time}`;
+  } else if (profile.stream_time) {
+    formattedTime = profile.stream_time;
+  }
+  
   return (
     <motion.div
       className="w-full max-w-md mx-auto bg-card shadow-lg rounded-xl overflow-hidden"
@@ -97,12 +105,17 @@ export function ProfileCard({
         )}
 
         {/* Stream Schedule */}
-        {(streamDays.length > 0 || profile.stream_time) && (
+        {(streamDays.length > 0 || formattedTime) && (
           <div>
             <h3 className="text-sm font-medium mb-2">Horario</h3>
             <StreamSchedule
               days={streamDays}
-              time={profile.stream_time}
+              time={formattedTime}
+              selectedDays={[]}
+              startTime=""
+              endTime=""
+              onDaysChange={() => {}}
+              onTimeChange={() => {}}
             />
           </div>
         )}

@@ -1,3 +1,4 @@
+
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/database.types';
 
@@ -26,8 +27,9 @@ export const fetchUserProfile = async (userId: string): Promise<Profile | null> 
       ...profile,
       games: Array.isArray(profile.games) ? profile.games : [],
       categories: Array.isArray(profile.categories) ? profile.categories : [],
-      stream_start_time: profile.stream_start_time || '',
-      stream_end_time: profile.stream_end_time || '',
+      stream_days: Array.isArray(profile.stream_days) ? profile.stream_days : [],
+      start_time: profile.start_time || '',
+      end_time: profile.end_time || '',
     };
   } catch (error) {
     console.error('❌ Error inesperado en fetchUserProfile:', error);
