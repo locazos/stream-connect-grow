@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,13 +17,12 @@ const POPULAR_GAMES = [
   "Dota 2", "CS:GO", "Overwatch", "Fall Guys", "Rocket League"
 ];
 
-// Helper function to check if profile has enough data to be considered complete
 const isProfileComplete = (profile: any) => {
-  return profile && 
-    profile.username && 
-    profile.description && 
-    profile.games && 
-    profile.games.length > 0;
+  return profile && profile.username && (
+    (profile.description && profile.description.trim().length > 0) ||
+    (profile.games && profile.games.length > 0) ||
+    (profile.stream_days && profile.stream_days.length > 0)
+  );
 };
 
 const SetupProfile = () => {
@@ -42,19 +40,16 @@ const SetupProfile = () => {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   
-  // Check if profile is complete and redirect if needed
   useEffect(() => {
     if (profile) {
-      // Pre-fill form with existing data
       if (profile.description) setDescription(profile.description);
       if (profile.games && profile.games.length > 0) setSelectedGames(profile.games);
       if (profile.stream_days) setSelectedDays(profile.stream_days);
       if (profile.start_time) setStartTime(profile.start_time);
       if (profile.end_time) setEndTime(profile.end_time);
       
-      // If profile is complete, redirect to profile page
       if (isProfileComplete(profile)) {
-        navigate("/profile");
+        navigate("/");
       }
       
       setInitialLoading(false);
@@ -97,19 +92,11 @@ const SetupProfile = () => {
       return;
     }
     
-    if (selectedGames.length === 0) {
-      toast({
-        title: "Error",
-        description: "Por favor, selecciona al menos un juego",
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setLoading(true);
     
     try {
       const updatedProfile = {
+        ...profile,
         description,
         games: selectedGames,
         stream_days: selectedDays,
@@ -131,22 +118,18 @@ const SetupProfile = () => {
           description: "No se pudo actualizar tu perfil. Intenta de nuevo.",
           variant: "destructive",
         });
-      } else {
-        // Update global state with new profile data
-        if (data && data[0]) {
-          setProfile({
-            ...profile!,
-            ...updatedProfile,
-          });
-          
-          toast({
-            title: "Perfil actualizado",
-            description: "Tu perfil ha sido actualizado correctamente",
-          });
-          
-          // Redirect to profile page
-          navigate("/profile");
-        }
+      } else if (data && data[0]) {
+        setProfile({
+          ...profile!,
+          ...updatedProfile,
+        });
+        
+        toast({
+          title: "Perfil actualizado",
+          description: "Tu perfil ha sido actualizado correctamente",
+        });
+        
+        navigate("/");
       }
     } catch (error) {
       console.error('Error in form submission:', error);
@@ -257,13 +240,23 @@ const SetupProfile = () => {
             }}
           />
           
-          <Button 
-            type="submit" 
-            className="w-full h-12 text-base" 
-            disabled={loading}
-          >
-            {loading ? "Guardando..." : "Guardar perfil"}
-          </Button>
+          <div className="flex gap-4">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => navigate("/")}
+              className="w-full"
+            >
+              Omitir por ahora
+            </Button>
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={loading}
+            >
+              {loading ? "Guardando..." : "Guardar perfil"}
+            </Button>
+          </div>
         </form>
       </div>
     </div>
