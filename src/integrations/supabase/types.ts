@@ -56,6 +56,8 @@ export type Database = {
           id: string
           start_time: string | null
           stream_days: string[] | null
+          stream_end_time: string | null
+          stream_start_time: string | null
           stream_time: string | null
           twitch_id: string | null
           twitch_url: string | null
@@ -72,6 +74,8 @@ export type Database = {
           id: string
           start_time?: string | null
           stream_days?: string[] | null
+          stream_end_time?: string | null
+          stream_start_time?: string | null
           stream_time?: string | null
           twitch_id?: string | null
           twitch_url?: string | null
@@ -88,6 +92,8 @@ export type Database = {
           id?: string
           start_time?: string | null
           stream_days?: string[] | null
+          stream_end_time?: string | null
+          stream_start_time?: string | null
           stream_time?: string | null
           twitch_id?: string | null
           twitch_url?: string | null

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
+import { StreamSchedule } from "@/components/StreamSchedule";
 
 const POPULAR_GAMES = [
   "Fortnite", "Minecraft", "Call of Duty", "League of Legends", 
@@ -25,22 +25,18 @@ const SetupProfile = () => {
   const [selectedGames, setSelectedGames] = useState<string[]>([]);
   const [customGame, setCustomGame] = useState("");
   const [loading, setLoading] = useState(false);
-  
-  // Redirect if user is not logged in
-  useEffect(() => {
-    if (!user) {
-      navigate("/login");
-    } else if (profile && profile.description && profile.games && profile.games.length > 0) {
-      // If profile is already complete, redirect to explore
-      navigate("/");
-    }
-  }, [user, profile, navigate]);
+  const [selectedDays, setSelectedDays] = useState<string[]>([]);
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   
   // Pre-fill form if profile exists
   useEffect(() => {
     if (profile) {
       if (profile.description) setDescription(profile.description);
       if (profile.games && profile.games.length > 0) setSelectedGames(profile.games);
+      if (profile.stream_days) setSelectedDays(profile.stream_days);
+      if (profile.stream_start_time) setStartTime(profile.stream_start_time);
+      if (profile.stream_end_time) setEndTime(profile.stream_end_time);
     }
   }, [profile]);
   
@@ -97,6 +93,9 @@ const SetupProfile = () => {
         .update({
           description,
           games: selectedGames,
+          stream_days: selectedDays,
+          stream_start_time: startTime,
+          stream_end_time: endTime,
           updated_at: new Date().toISOString(),
         })
         .eq('id', user.id);
@@ -113,7 +112,7 @@ const SetupProfile = () => {
           title: "Perfil actualizado",
           description: "Tu perfil ha sido actualizado correctamente",
         });
-        navigate("/");
+        navigate("/profile");
       }
     } catch (error) {
       console.error('Error in form submission:', error);
@@ -137,8 +136,8 @@ const SetupProfile = () => {
   
   return (
     <div className="flex min-h-[100dvh] items-center justify-center p-6 bg-background">
-      <div className="w-full max-w-md space-y-6">
-        <div className="space-y-4 text-center">
+      <div className="w-full max-w-md space-y-8">
+        <div className="space-y-6 text-center">
           <h1 className="text-3xl font-bold tracking-tight">
             Completa tu perfil
           </h1>
@@ -146,20 +145,19 @@ const SetupProfile = () => {
             Solo necesitamos un poco más de información para comenzar a conectarte con otros streamers
           </p>
           
-          <div className="flex justify-center py-4">
+          <div className="flex justify-center py-6">
             <AvatarWithFallback 
               src={profile.avatar_url} 
-              username={profile.username} 
+              username={profile.username}
               className="h-24 w-24"
-              fallbackClassName="text-xl"
             />
           </div>
           
           <div className="text-lg font-medium">{profile.username}</div>
         </div>
         
-        <form className="space-y-6" onSubmit={handleSubmit}>
-          <div className="space-y-2">
+        <form className="space-y-8" onSubmit={handleSubmit}>
+          <div className="space-y-4">
             <Label htmlFor="description">Descripción de tu canal</Label>
             <Textarea
               id="description"
@@ -171,7 +169,7 @@ const SetupProfile = () => {
             />
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-4">
             <Label>Juegos que juegas</Label>
             <div className="flex flex-wrap gap-2 mb-4">
               {POPULAR_GAMES.map((game) => (
@@ -201,32 +199,22 @@ const SetupProfile = () => {
                 Añadir
               </Button>
             </div>
-            
-            <div className="mt-4">
-              <Label>Juegos seleccionados:</Label>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {selectedGames.map((game) => (
-                  <div 
-                    key={game} 
-                    className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full flex items-center"
-                  >
-                    {game}
-                    <button
-                      type="button"
-                      className="ml-2 text-xs"
-                      onClick={() => setSelectedGames(selectedGames.filter(g => g !== game))}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
+
+          <StreamSchedule
+            selectedDays={selectedDays}
+            startTime={startTime}
+            endTime={endTime}
+            onDaysChange={setSelectedDays}
+            onTimeChange={(type, value) => {
+              if (type === "start") setStartTime(value);
+              else setEndTime(value);
+            }}
+          />
           
           <Button 
             type="submit" 
-            className="w-full" 
+            className="w-full h-12 text-base" 
             disabled={loading}
           >
             {loading ? "Guardando..." : "Guardar perfil"}
