@@ -270,15 +270,25 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Horarios */}
+              {/* Horarios - FIX: Changed references from stream_time_start/end to start_time/end_time */}
               <div className="flex gap-4">
                 <div className="flex-1 space-y-2">
                   <Label>Hora inicio</Label>
-                  <Input type="time" name="stream_time_start" value={formData.stream_time_start} onChange={handleChange} />
+                  <Input 
+                    type="time" 
+                    name="start_time" 
+                    value={formData.start_time} 
+                    onChange={handleChange} 
+                  />
                 </div>
                 <div className="flex-1 space-y-2">
                   <Label>Hora fin</Label>
-                  <Input type="time" name="stream_time_end" value={formData.stream_time_end} onChange={handleChange} />
+                  <Input 
+                    type="time" 
+                    name="end_time" 
+                    value={formData.end_time} 
+                    onChange={handleChange} 
+                  />
                 </div>
               </div>
 
