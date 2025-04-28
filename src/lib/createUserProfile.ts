@@ -1,33 +1,31 @@
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
-import { Database } from '@/lib/database.types';
+import type { Database } from '@/lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export const createUserProfile = async (user: User): Promise<Profile | null> => {
   try {
-    const { id, user_metadata } = user;
-    const username = user_metadata?.preferred_username || user_metadata?.full_name || 'streamer';
-    const avatarUrl = user_metadata?.avatar_url || null;
-    const twitchId = user_metadata?.provider_id || null;
-    const twitchUrl = username ? `https://www.twitch.tv/${username}` : null;
+    console.log("➡️ Entrando en createUserProfile");
 
-    console.log("🛠️ Creando perfil con:", { id, username, avatarUrl, twitchId, twitchUrl });
+    const userMetadata = user.user_metadata;
+    const username = userMetadata?.full_name || userMetadata?.preferred_username || 'streamer';
+    const avatarUrl = userMetadata?.avatar_url || null;
+    const twitchId = userMetadata?.provider_id || null;
 
     const { data, error } = await supabase
       .from('profiles')
       .insert([
         {
-          id,
+          id: user.id,
           username,
           avatar_url: avatarUrl,
           description: '',
           games: [],
           categories: [],
-          stream_start_time: null,
-          stream_end_time: null,
+          stream_start_time: '',
+          stream_end_time: '',
           twitch_id: twitchId,
-          twitch_url: twitchUrl,
           created_at: new Date().toISOString(),
         }
       ])
@@ -39,7 +37,7 @@ export const createUserProfile = async (user: User): Promise<Profile | null> => 
       return null;
     }
 
-    console.log('✅ Perfil creado:', data);
+    console.log("✅ Perfil creado correctamente:", data);
     return data;
   } catch (error) {
     console.error('❌ Error inesperado en createUserProfile:', error);

@@ -1,11 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { createUserProfile } from '@/lib/createUserProfile';
-import { useToast } from '@/components/ui/use-toast';
-import type { User, Session } from '@supabase/supabase-js';
-import type { Database } from '@/lib/database.types';
 import { fetchUserProfile } from '@/lib/fetchUserProfile';
-
+import type { Database } from '@/lib/database.types';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
@@ -14,66 +12,52 @@ export const useAuthState = () => {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-
-  const fetchProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
-
-      if (error) {
-        console.error('❌ Error fetching profile:', error.message);
-        return null;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('❌ Error inesperado en fetchProfile:', error);
-      return null;
-    }
-  };
 
   useEffect(() => {
-    const initializeAuth = async () => {
+    const handleProfile = async (user: User) => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        setSession(session);
-        setUser(session?.user || null);
+        let profile = await fetchUserProfile(user.id);
 
-        if (session?.user) {
-          // Creamos el perfil si no existe
-          await createUserProfile(session.user);
+        if (!profile) {
+          console.log('⚡ No existe perfil, creando uno nuevo...');
+          profile = await createUserProfile(user);
+        }
 
-          // Cargamos el perfil
-          const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
+        if (profile) {
+          setProfile(profile);
+        } else {
+          console.error('❌ No se pudo cargar o crear perfil');
         }
       } catch (error) {
-        console.error('❌ Error inicializando sesión:', error);
+        console.error('❌ Error en handleProfile:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    initializeAuth();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      setSession(session);
+      setUser(session?.user || null);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user || null);
-
-        if (session?.user) {
-          await createUserProfile(session.user);
-          const profileData = await fetchProfile(session.user.id);
-          setProfile(profileData);
-        } else {
-          setProfile(null);
-        }
+      if (session?.user) {
+        await handleProfile(session.user);
+      } else {
+        setProfile(null);
       }
-    );
+    });
+
+    const getInitialSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setSession(session);
+        setUser(session.user);
+        await handleProfile(session.user);
+      } else {
+        setLoading(false);
+      }
+    };
+
+    getInitialSession();
 
     return () => {
       subscription.unsubscribe();
