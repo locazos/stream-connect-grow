@@ -2,7 +2,7 @@
 // pages/complete-profile.tsx
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Changed from next/router to react-router-dom
+import { useNavigate } from "react-router-dom";
 import { MobileLayout } from "@/components/MobileLayout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,18 +13,24 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import useStore from "@/store/useStore";
 import { supabase } from "@/integrations/supabase/client";
+import { TWITCH_CATEGORIES, WEEK_DAYS } from "@/lib/constants";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Clock } from "lucide-react";
 
 const CompleteProfile = () => {
   const { user } = useAuth();
   const { setProfile } = useStore();
-  const navigate = useNavigate(); // Changed from useRouter to useNavigate
+  const navigate = useNavigate();
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     username: user?.user_metadata.name || "",
     description: "",
-    game: "",
-    games: [] as string[],
+    category: "",
+    categories: [] as string[],
+    stream_days: [] as string[],
+    start_time: "",
+    end_time: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -33,28 +39,42 @@ const CompleteProfile = () => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddGame = () => {
-    if (!formData.game.trim()) return;
+  const handleAddCategory = () => {
+    if (!formData.category.trim()) return;
 
-    if (!formData.games.includes(formData.game)) {
+    if (!formData.categories.includes(formData.category)) {
       setFormData((prev) => ({
         ...prev,
-        games: [...prev.games, formData.game],
-        game: "",
+        categories: [...prev.categories, formData.category],
+        category: "",
       }));
     } else {
       toast({
-        title: "Juego duplicado",
-        description: "Ya has añadido este juego",
+        title: "Categoría duplicada",
+        description: "Ya has añadido esta categoría",
         variant: "destructive",
       });
     }
   };
 
-  const handleRemoveGame = (gameToRemove: string) => {
+  const handleRemoveCategory = (categoryToRemove: string) => {
     setFormData((prev) => ({
       ...prev,
-      games: prev.games.filter((game) => game !== gameToRemove),
+      categories: prev.categories.filter((category) => category !== categoryToRemove),
+    }));
+  };
+
+  const handleStreamDaysChange = (days: string[]) => {
+    setFormData((prev) => ({
+      ...prev,
+      stream_days: days,
+    }));
+  };
+
+  const handleTimeChange = (type: "start" | "end", value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [type === "start" ? "start_time" : "end_time"]: value,
     }));
   };
 
@@ -70,12 +90,15 @@ const CompleteProfile = () => {
         .update({
           username: formData.username,
           description: formData.description,
-          games: formData.games,
+          categories: formData.categories,
+          stream_days: formData.stream_days,
+          start_time: formData.start_time,
+          end_time: formData.end_time,
           updated_at: new Date().toISOString(),
         })
         .eq("id", user.id)
         .select()
-        .single(); // Importante: recoger el perfil actualizado
+        .single();
 
       if (error) {
         console.error("❌ Error actualizando perfil:", error);
@@ -96,7 +119,7 @@ const CompleteProfile = () => {
         description: "¡Ya puedes explorar streamers!",
       });
 
-      navigate("/profile"); // Changed from router.push to navigate
+      navigate("/profile");
     } catch (error) {
       console.error("❌ Error inesperado:", error);
       toast({
@@ -140,14 +163,14 @@ const CompleteProfile = () => {
           </div>
 
           <div className="space-y-2">
-            <Label>Juegos principales</Label>
+            <Label>Categorías de contenido</Label>
             <div className="flex flex-wrap gap-2 mb-2">
-              {formData.games.map((game, index) => (
+              {formData.categories.map((category, index) => (
                 <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                  {game}
+                  {category}
                   <button
                     type="button"
-                    onClick={() => handleRemoveGame(game)}
+                    onClick={() => handleRemoveCategory(category)}
                     className="ml-1 h-4 w-4 rounded-full bg-muted-foreground/30 inline-flex items-center justify-center hover:bg-muted-foreground/50"
                   >
                     <span className="sr-only">Remove</span>
@@ -160,17 +183,89 @@ const CompleteProfile = () => {
               ))}
             </div>
 
+            <div className="flex flex-wrap gap-2 mb-2">
+              {TWITCH_CATEGORIES.map((category) => (
+                <Badge 
+                  key={category} 
+                  variant="outline" 
+                  className="cursor-pointer hover:bg-secondary"
+                  onClick={() => {
+                    if (!formData.categories.includes(category)) {
+                      setFormData(prev => ({
+                        ...prev,
+                        categories: [...prev.categories, category]
+                      }));
+                    }
+                  }}
+                >
+                  {category}
+                </Badge>
+              ))}
+            </div>
+
             <div className="flex gap-2">
               <Input
-                id="game"
-                name="game"
-                value={formData.game}
+                id="category"
+                name="category"
+                value={formData.category}
                 onChange={handleChange}
-                placeholder="Añadir juego"
+                placeholder="Añadir otra categoría"
               />
-              <Button type="button" variant="secondary" onClick={handleAddGame} className="shrink-0">
+              <Button type="button" variant="secondary" onClick={handleAddCategory} className="shrink-0">
                 Añadir
               </Button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Días de stream</Label>
+            <ToggleGroup 
+              type="multiple" 
+              value={formData.stream_days}
+              onValueChange={handleStreamDaysChange}
+              className="flex flex-wrap justify-between gap-2"
+            >
+              {WEEK_DAYS.map((day) => (
+                <ToggleGroupItem
+                  key={day}
+                  value={day}
+                  className="text-xs flex-1 data-[state=on]:bg-primary data-[state=on]:text-primary-foreground"
+                >
+                  {day.slice(0, 3)}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="start_time">Hora de inicio</Label>
+              <div className="relative">
+                <Input
+                  id="start_time"
+                  name="start_time"
+                  type="time"
+                  value={formData.start_time}
+                  onChange={(e) => handleTimeChange("start", e.target.value)}
+                  className="pl-10"
+                />
+                <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="end_time">Hora de fin</Label>
+              <div className="relative">
+                <Input
+                  id="end_time"
+                  name="end_time"
+                  type="time"
+                  value={formData.end_time}
+                  onChange={(e) => handleTimeChange("end", e.target.value)}
+                  className="pl-10"
+                />
+                <Clock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
+              </div>
             </div>
           </div>
 
