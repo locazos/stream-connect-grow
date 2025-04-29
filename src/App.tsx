@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import Explore from "./pages/Explore";
 import Matches from "./pages/Matches";
 import Profile from "./pages/Profile";
 import SetupProfile from "./pages/SetupProfile";
+import CompleteProfile from "./pages/complete-profile"; // Add import for CompleteProfile
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -46,11 +46,12 @@ const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
     return <Navigate to="/login" replace />;
   }
   
-  // If profile is incomplete and user is not on SetupProfile page, redirect to it
+  // If profile is incomplete and user is not on SetupProfile or CompleteProfile page, redirect to it
   if (
     profile && 
     (!profile.description || !profile.games || profile.games.length === 0) && 
-    location.pathname !== "/setup-profile"
+    location.pathname !== "/setup-profile" &&
+    location.pathname !== "/complete-profile"
   ) {
     return <Navigate to="/setup-profile" replace />;
   }
@@ -110,12 +111,20 @@ function App() {
                 } 
               />
               
-              {/* Onboarding route - special protection */}
+              {/* Onboarding routes - special protection */}
               <Route 
                 path="/setup-profile" 
                 element={
                   <ProtectedRoute>
                     <SetupProfile />
+                  </ProtectedRoute>
+                } 
+              />
+              <Route 
+                path="/complete-profile" 
+                element={
+                  <ProtectedRoute>
+                    <CompleteProfile />
                   </ProtectedRoute>
                 } 
               />
