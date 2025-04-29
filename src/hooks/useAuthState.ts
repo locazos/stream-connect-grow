@@ -1,7 +1,8 @@
+
 // hooks/useAuthState.ts
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router'; // 👈 añade esto
+import { useNavigate } from 'react-router-dom'; // 👈 Replace next/router with react-router-dom
 import { supabase } from '@/integrations/supabase/client';
 import { createUserProfile, fetchUserProfile } from '@/lib/createUserProfile';
 import type { Database } from '@/lib/database.types';
@@ -14,7 +15,7 @@ export const useAuthState = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const router = useRouter(); // 👈
+  const navigate = useNavigate(); // 👈 Using useNavigate from react-router-dom
 
   useEffect(() => {
     const handleProfileFetch = async (user: User) => {
@@ -31,7 +32,7 @@ export const useAuthState = () => {
         // 👉 Si no tiene descripción o juegos, redirigir a completar perfil
         if (!profileData.description || !profileData.games?.length) {
           console.log("🚀 Perfil incompleto, redirigiendo...");
-          router.push("/complete-profile");
+          navigate("/complete-profile"); // 👈 Use navigate instead of router.push
         }
       }
     };
@@ -71,7 +72,7 @@ export const useAuthState = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [router]);
+  }, [navigate]); // 👈 Add navigate to the dependency array
 
   return { session, user, profile, loading };
 };

@@ -1,7 +1,8 @@
+
 // pages/complete-profile.tsx
 
 import { useState } from "react";
-import { useRouter } from "next/router";
+import { useNavigate } from "react-router-dom"; // 👈 Use react-router-dom instead of next/router
 import { MobileLayout } from "@/components/MobileLayout";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +17,7 @@ import { supabase } from "@/integrations/supabase/client";
 const CompleteProfile = () => {
   const { user } = useAuth();
   const { setProfile } = useStore();
-  const router = useRouter();
+  const navigate = useNavigate(); // 👈 Using useNavigate instead of useRouter
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -74,7 +75,7 @@ const CompleteProfile = () => {
         })
         .eq("id", user.id)
         .select()
-        .single(); // Importante: recoger el perfil actualizado
+        .single();
 
       if (error) {
         console.error("❌ Error actualizando perfil:", error);
@@ -87,7 +88,7 @@ const CompleteProfile = () => {
       }
 
       if (data) {
-        setProfile(data); // Actualizamos el store
+        setProfile(data);
       }
 
       toast({
@@ -95,7 +96,7 @@ const CompleteProfile = () => {
         description: "¡Ya puedes explorar streamers!",
       });
 
-      router.push("/profile"); // Navegar al perfil
+      navigate("/"); // 👈 Navigate to home instead of profile as requested
     } catch (error) {
       console.error("❌ Error inesperado:", error);
       toast({
