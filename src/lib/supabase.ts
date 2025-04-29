@@ -1,11 +1,7 @@
-
-import { createClient } from '@supabase/supabase-js';
-import { Database } from './database.types';
-
-// Importar el cliente de Supabase desde el archivo generado automáticamente
+// Import the client from the integration file
 import { supabase } from '@/integrations/supabase/client';
 
-// Exportar el cliente de Supabase para ser utilizado en toda la aplicación
+// Export the client for use throughout the application
 export { supabase };
 
 // Helper function to test if a swipe creates a match

@@ -23,6 +23,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signInWithTwitch = async () => {
     try {
+      console.log("🔑 Starting Twitch login...");
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'twitch',
         options: {
@@ -30,15 +31,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
       });
       
+      if (error) {
+        console.error("❌ Twitch login error:", error);
+      } else {
+        console.log("✅ Twitch login initiated successfully");
+      }
+      
       return { error };
     } catch (error) {
-      console.error('Error in signInWithTwitch:', error);
+      console.error('❌ Error in signInWithTwitch:', error);
       return { error: error as Error };
     }
   };
 
   const signOut = async () => {
+    console.log("🚪 Signing out...");
     await supabase.auth.signOut();
+    console.log("✅ Sign out complete");
   };
 
   const value = {
