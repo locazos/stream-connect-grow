@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import useStore from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
+import { Calendar, Clock } from "lucide-react";
 
 const daysOfWeek = [
   "Lunes",
@@ -177,6 +178,11 @@ const Profile = () => {
     );
   }
 
+  // Format time range for display if both exist
+  const formattedTimeRange = profile.start_time && profile.end_time 
+    ? `${profile.start_time.slice(0, 5)} - ${profile.end_time.slice(0, 5)}`
+    : null;
+
   return (
     <MobileLayout>
       <div className="p-4 max-w-md mx-auto">
@@ -320,6 +326,42 @@ const Profile = () => {
                     {profile.games.map((game, idx) => (
                       <Badge key={idx} variant="secondary">{game}</Badge>
                     ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Stream Days - Nueva sección */}
+              {Array.isArray(profile.stream_days) && profile.stream_days.length > 0 && (
+                <div>
+                  <h2 className="text-sm font-medium text-muted-foreground mb-2">Días de stream</h2>
+                  <div className="flex items-start space-x-3 bg-muted/50 p-4 rounded-lg">
+                    <Calendar className="text-muted-foreground mt-0.5" size={20} />
+                    <div className="flex flex-wrap gap-2">
+                      {profile.stream_days.map((day, index) => (
+                        <Badge key={index} variant="secondary">
+                          {day}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Stream Schedule - Nueva sección */}
+              {(profile.start_time || profile.end_time) && (
+                <div>
+                  <h2 className="text-sm font-medium text-muted-foreground mb-2">Horario de Stream</h2>
+                  <div className="flex items-center space-x-3 bg-muted/50 p-4 rounded-lg">
+                    <Clock className="text-muted-foreground" size={20} />
+                    <div>
+                      {formattedTimeRange ? (
+                        <p className="text-sm font-medium">{formattedTimeRange}</p>
+                      ) : (
+                        <p className="text-sm text-muted-foreground">
+                          {profile.start_time ? `Inicio: ${profile.start_time.slice(0, 5)}` : `Fin: ${profile.end_time?.slice(0, 5)}`}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
