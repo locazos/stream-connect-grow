@@ -4,7 +4,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom'; // 👈 Replace next/router with react-router-dom
 import { supabase } from '@/integrations/supabase/client';
-import { createUserProfile, fetchUserProfile } from '@/lib/createUserProfile';
+import { createUserProfile } from '@/lib/createUserProfile';
+import { fetchUserProfile } from '@/lib/auth';
 import type { Database } from '@/lib/database.types';
 import { Session, User } from '@supabase/supabase-js';
 
