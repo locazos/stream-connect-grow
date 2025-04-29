@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Database } from "@/lib/database.types";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
-import { Clock, User, Edit, LogOut } from "lucide-react";
+import { Clock, User, Edit, LogOut, Calendar } from "lucide-react";
 
 // Define the Profile type from the Database type
 type Profile = Database['public']['Tables']['profiles']['Row'];
@@ -66,6 +66,23 @@ export function ProfileView({ profile, onEdit, onLogout }: ProfileViewProps) {
                 {category}
               </Badge>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Stream Days */}
+      {Array.isArray(profile.stream_days) && profile.stream_days.length > 0 && (
+        <div className="w-full">
+          <h2 className="text-sm font-medium text-muted-foreground mb-2">Días de stream</h2>
+          <div className="flex items-start space-x-3 bg-muted/50 p-4 rounded-lg">
+            <Calendar className="text-muted-foreground mt-0.5" size={20} />
+            <div className="flex flex-wrap gap-2">
+              {profile.stream_days.map((day, index) => (
+                <Badge key={index} variant="secondary">
+                  {day}
+                </Badge>
+              ))}
+            </div>
           </div>
         </div>
       )}
