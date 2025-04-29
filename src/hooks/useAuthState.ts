@@ -1,11 +1,9 @@
-
 // hooks/useAuthState.ts
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/router'; // 👈 añade esto
 import { supabase } from '@/integrations/supabase/client';
-import { createUserProfile } from '@/lib/createUserProfile';
-import { fetchUserProfile } from '@/lib/auth';
+import { createUserProfile, fetchUserProfile } from '@/lib/createUserProfile';
 import type { Database } from '@/lib/database.types';
 import { Session, User } from '@supabase/supabase-js';
 
@@ -16,47 +14,35 @@ export const useAuthState = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const navigate = useNavigate();
+  const router = useRouter(); // 👈
 
   useEffect(() => {
     const handleProfileFetch = async (user: User) => {
-      try {
-        console.log("🔍 Fetching user profile for:", user.id);
-        const profileData = await fetchUserProfile(user.id);
-        
-        if (!profileData) {
-          console.log("🔄 No profile found, creating a new one...");
-          const newProfile = await createUserProfile(user);
-          if (newProfile) {
-            setProfile(newProfile);
-            console.log("✅ New profile created successfully");
-          } else {
-            console.error("❌ Failed to create new profile");
-          }
-        } else {
-          console.log("✅ Profile found:", profileData);
-          setProfile(profileData);
-
-          // Check if profile is incomplete and redirect to complete-profile if needed
-          if (!profileData.description || !profileData.games?.length) {
-            console.log("🚀 Profile incomplete, redirecting to complete-profile");
-            navigate("/complete-profile");
-          }
+      const profileData = await fetchUserProfile(user.id);
+      if (!profileData) {
+        console.log("🔄 No hay perfil, creando uno nuevo...");
+        const newProfile = await createUserProfile(user);
+        if (newProfile) {
+          setProfile(newProfile);
         }
-      } catch (error) {
-        console.error("❌ Error handling profile:", error);
+      } else {
+        setProfile(profileData);
+
+        // 👉 Si no tiene descripción o juegos, redirigir a completar perfil
+        if (!profileData.description || !profileData.games?.length) {
+          console.log("🚀 Perfil incompleto, redirigiendo...");
+          router.push("/complete-profile");
+        }
       }
     };
 
-    // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, currentSession) => {
-        console.log("👂 Auth state changed:", _event);
-        setSession(currentSession);
-        setUser(currentSession?.user || null);
+      async (_event, session) => {
+        setSession(session);
+        setUser(session?.user || null);
 
-        if (currentSession?.user) {
-          await handleProfileFetch(currentSession.user);
+        if (session?.user) {
+          await handleProfileFetch(session.user);
         } else {
           setProfile(null);
         }
@@ -65,21 +51,16 @@ export const useAuthState = () => {
       }
     );
 
-    // Then check for initial session
     const getInitialSession = async () => {
       try {
-        console.log("🔍 Getting initial session...");
-        const { data: { session: initialSession } } = await supabase.auth.getSession();
-        if (initialSession?.user) {
-          console.log("✅ Initial session found for user:", initialSession.user.id);
-          setSession(initialSession);
-          setUser(initialSession.user);
-          await handleProfileFetch(initialSession.user);
-        } else {
-          console.log("ℹ️ No initial session found");
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          setSession(session);
+          setUser(session.user);
+          await handleProfileFetch(session.user);
         }
       } catch (error) {
-        console.error("❌ Error getting initial session:", error);
+        console.error('Error getting initial session:', error);
       } finally {
         setLoading(false);
       }
@@ -88,10 +69,9 @@ export const useAuthState = () => {
     getInitialSession();
 
     return () => {
-      console.log("🧹 Cleaning up auth subscription");
       subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, [router]);
 
   return { session, user, profile, loading };
 };
