@@ -2,16 +2,12 @@
 import { useState, useEffect } from "react";
 import { MobileLayout } from "@/components/MobileLayout";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import useStore from "@/store/useStore";
 import { supabase } from "@/lib/supabase";
-import { Calendar, Clock } from "lucide-react";
+import { ProfileView } from "@/components/profile/ProfileView";
+import { ProfileEditForm } from "@/components/profile/ProfileEditForm";
 
 const daysOfWeek = [
   "Lunes",
@@ -67,7 +63,7 @@ const Profile = () => {
     }
   }, [profile]);
 
-  const handleChange = (e: any) => {
+  const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -89,14 +85,14 @@ const Profile = () => {
     }
   };
 
-  const handleRemoveItem = (field: "games" | "categories" | "stream_days", value: string) => {
+  const handleRemoveItem = (field, value) => {
     setFormData((prev) => ({
       ...prev,
-      [field]: prev[field].filter((item: string) => item !== value),
+      [field]: prev[field].filter((item) => item !== value),
     }));
   };
 
-  const handleAddCategory = (category: string) => {
+  const handleAddCategory = (category) => {
     if (!formData.categories.includes(category)) {
       setFormData((prev) => ({
         ...prev,
@@ -105,7 +101,7 @@ const Profile = () => {
     }
   };
 
-  const handleToggleDay = (day: string) => {
+  const handleToggleDay = (day) => {
     if (formData.stream_days.includes(day)) {
       handleRemoveItem("stream_days", day);
     } else {
@@ -116,7 +112,7 @@ const Profile = () => {
     }
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) return;
     setIsLoading(true);
@@ -143,7 +139,7 @@ const Profile = () => {
       }
 
       setProfile({
-        ...profile!,
+        ...profile,
         username: formData.username,
         description: formData.description,
         games: formData.games,
@@ -178,11 +174,6 @@ const Profile = () => {
     );
   }
 
-  // Format time range for display if both exist
-  const formattedTimeRange = profile.start_time && profile.end_time 
-    ? `${profile.start_time.slice(0, 5)} - ${profile.end_time.slice(0, 5)}`
-    : null;
-
   return (
     <MobileLayout>
       <div className="p-4 max-w-md mx-auto">
@@ -192,185 +183,26 @@ const Profile = () => {
           </div>
 
           {isEditing ? (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2">
-                <Label>Nombre de usuario</Label>
-                <Input value={formData.username} disabled />
-              </div>
-
-              <div className="space-y-2">
-                <Label>Descripción</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="Cuéntanos sobre ti y tu canal"
-                  rows={3}
-                />
-              </div>
-
-              {/* Juegos */}
-              <div className="space-y-2">
-                <Label>Juegos principales</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {formData.games.map((game, idx) => (
-                    <Badge key={idx} variant="secondary" className="flex items-center gap-1">
-                      {game}
-                      <button type="button" onClick={() => handleRemoveItem("games", game)}>
-                        ❌
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex gap-2">
-                  <Input id="game" name="game" value={formData.game} onChange={handleChange} placeholder="Añadir juego" />
-                  <Button type="button" variant="secondary" onClick={handleAddGame}>Añadir</Button>
-                </div>
-              </div>
-
-              {/* Categorías */}
-              <div className="space-y-2">
-                <Label>Categorías de contenido</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {formData.categories.map((cat, idx) => (
-                    <Badge key={idx} variant="secondary" className="flex items-center gap-1">
-                      {cat}
-                      <button type="button" onClick={() => handleRemoveItem("categories", cat)}>
-                        ❌
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-                <div className="flex gap-2 flex-wrap">
-                  {topCategories.map((cat) => (
-                    <Button
-                      key={cat}
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleAddCategory(cat)}
-                      disabled={formData.categories.includes(cat)}
-                    >
-                      {cat}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Días de stream */}
-              <div className="space-y-2">
-                <Label>Días que sueles streamear</Label>
-                <div className="flex flex-wrap gap-2">
-                  {daysOfWeek.map((day) => (
-                    <Button
-                      key={day}
-                      type="button"
-                      variant={formData.stream_days.includes(day) ? "secondary" : "outline"}
-                      onClick={() => handleToggleDay(day)}
-                      size="sm"
-                    >
-                      {day}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Horarios - FIX: Changed references from stream_time_start/end to start_time/end_time */}
-              <div className="flex gap-4">
-                <div className="flex-1 space-y-2">
-                  <Label>Hora inicio</Label>
-                  <Input 
-                    type="time" 
-                    name="start_time" 
-                    value={formData.start_time} 
-                    onChange={handleChange} 
-                  />
-                </div>
-                <div className="flex-1 space-y-2">
-                  <Label>Hora fin</Label>
-                  <Input 
-                    type="time" 
-                    name="end_time" 
-                    value={formData.end_time} 
-                    onChange={handleChange} 
-                  />
-                </div>
-              </div>
-
-              {/* Acciones */}
-              <div className="flex justify-between pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsEditing(false)} disabled={isLoading}>Cancelar</Button>
-                <Button type="submit" disabled={isLoading}>{isLoading ? "Guardando..." : "Guardar cambios"}</Button>
-              </div>
-            </form>
+            <ProfileEditForm
+              formData={formData}
+              isLoading={isLoading}
+              daysOfWeek={daysOfWeek}
+              topCategories={topCategories}
+              onSubmit={handleSubmit}
+              onChange={handleChange}
+              onAddGame={handleAddGame}
+              onAddCategory={handleAddCategory}
+              onToggleDay={handleToggleDay}
+              onRemoveItem={handleRemoveItem}
+              onCancel={() => setIsEditing(false)}
+            />
           ) : (
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-2xl font-bold">{profile.username}</h1>
-                <p className="text-muted-foreground">{user.email}</p>
-              </div>
-
-              {/* Mostrar info del perfil */}
-              {profile.description && (
-                <div>
-                  <h2 className="text-sm font-medium text-muted-foreground mb-2">Descripción</h2>
-                  <p className="text-sm bg-muted/50 p-3 rounded-md">{profile.description}</p>
-                </div>
-              )}
-
-              {profile.games.length > 0 && (
-                <div>
-                  <h2 className="text-sm font-medium text-muted-foreground mb-2">Juegos principales</h2>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.games.map((game, idx) => (
-                      <Badge key={idx} variant="secondary">{game}</Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {/* Stream Days - Nueva sección */}
-              {Array.isArray(profile.stream_days) && profile.stream_days.length > 0 && (
-                <div>
-                  <h2 className="text-sm font-medium text-muted-foreground mb-2">Días de stream</h2>
-                  <div className="flex items-start space-x-3 bg-muted/50 p-4 rounded-lg">
-                    <Calendar className="text-muted-foreground mt-0.5" size={20} />
-                    <div className="flex flex-wrap gap-2">
-                      {profile.stream_days.map((day, index) => (
-                        <Badge key={index} variant="secondary">
-                          {day}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Stream Schedule - Nueva sección */}
-              {(profile.start_time || profile.end_time) && (
-                <div>
-                  <h2 className="text-sm font-medium text-muted-foreground mb-2">Horario de Stream</h2>
-                  <div className="flex items-center space-x-3 bg-muted/50 p-4 rounded-lg">
-                    <Clock className="text-muted-foreground" size={20} />
-                    <div>
-                      {formattedTimeRange ? (
-                        <p className="text-sm font-medium">{formattedTimeRange}</p>
-                      ) : (
-                        <p className="text-sm text-muted-foreground">
-                          {profile.start_time ? `Inicio: ${profile.start_time.slice(0, 5)}` : `Fin: ${profile.end_time?.slice(0, 5)}`}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex justify-between pt-4">
-                <Button variant="outline" onClick={handleLogout}>Cerrar sesión</Button>
-                <Button onClick={() => setIsEditing(true)}>Editar perfil</Button>
-              </div>
-            </div>
+            <ProfileView
+              profile={profile}
+              email={user.email}
+              onEdit={() => setIsEditing(true)}
+              onLogout={handleLogout}
+            />
           )}
         </div>
       </div>

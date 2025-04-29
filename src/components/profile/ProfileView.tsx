@@ -1,78 +1,61 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Database } from "@/lib/database.types";
 import { AvatarWithFallback } from "@/components/ui/avatar-with-fallback";
-import { Clock, User, Edit, LogOut, Calendar } from "lucide-react";
-
-// Define the Profile type from the Database type
-type Profile = Database['public']['Tables']['profiles']['Row'];
+import { Calendar, Clock } from "lucide-react";
 
 interface ProfileViewProps {
-  profile: Profile;
+  profile: {
+    username: string;
+    description: string;
+    games: string[];
+    categories: string[];
+    stream_days: string[];
+    avatar_url: string | null;
+    start_time: string | null;
+    end_time: string | null;
+    twitch_url?: string | null;
+  };
+  email?: string;
   onEdit: () => void;
   onLogout: () => void;
 }
 
-export function ProfileView({ profile, onEdit, onLogout }: ProfileViewProps) {
-  // Format times for display if both exist
+export function ProfileView({ profile, email, onEdit, onLogout }: ProfileViewProps) {
+  // Format time range for display if both exist
   const formattedTimeRange = profile.start_time && profile.end_time 
     ? `${profile.start_time.slice(0, 5)} - ${profile.end_time.slice(0, 5)}`
     : null;
 
   return (
-    <div className="flex flex-col items-center space-y-6 pt-2 pb-8">
-      {/* Avatar */}
-      <div className="relative w-24 h-24">
-        <AvatarWithFallback 
-          src={profile.avatar_url || undefined} 
-          username={profile.username || "User"}
-          className="w-24 h-24 border-2 border-primary/20"
-        />
-      </div>
-
-      {/* Username and Profile Info */}
-      <div className="text-center space-y-2">
+    <div className="space-y-6">
+      <div>
         <h1 className="text-2xl font-bold">{profile.username}</h1>
-        {profile.twitch_url && (
-          <a 
-            href={profile.twitch_url} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            className="text-sm text-muted-foreground hover:text-primary"
-          >
-            {profile.twitch_url.replace('https://', '')}
-          </a>
-        )}
+        {email && <p className="text-muted-foreground">{email}</p>}
       </div>
 
-      {/* Description */}
+      {/* Mostrar info del perfil */}
       {profile.description && (
-        <div className="w-full">
+        <div>
           <h2 className="text-sm font-medium text-muted-foreground mb-2">Descripción</h2>
-          <p className="text-sm bg-muted/50 p-4 rounded-lg">
-            {profile.description}
-          </p>
+          <p className="text-sm bg-muted/50 p-3 rounded-md">{profile.description}</p>
         </div>
       )}
 
-      {/* Categories */}
-      {Array.isArray(profile.categories) && profile.categories.length > 0 && (
-        <div className="w-full">
-          <h2 className="text-sm font-medium text-muted-foreground mb-2">Categorías</h2>
+      {profile.games && profile.games.length > 0 && (
+        <div>
+          <h2 className="text-sm font-medium text-muted-foreground mb-2">Juegos principales</h2>
           <div className="flex flex-wrap gap-2">
-            {profile.categories.map((category, index) => (
-              <Badge key={index} variant="secondary" className="px-3 py-1 text-xs">
-                {category}
-              </Badge>
+            {profile.games.map((game, idx) => (
+              <Badge key={idx} variant="secondary">{game}</Badge>
             ))}
           </div>
         </div>
       )}
-
+      
       {/* Stream Days */}
       {Array.isArray(profile.stream_days) && profile.stream_days.length > 0 && (
-        <div className="w-full">
+        <div>
           <h2 className="text-sm font-medium text-muted-foreground mb-2">Días de stream</h2>
           <div className="flex items-start space-x-3 bg-muted/50 p-4 rounded-lg">
             <Calendar className="text-muted-foreground mt-0.5" size={20} />
@@ -89,7 +72,7 @@ export function ProfileView({ profile, onEdit, onLogout }: ProfileViewProps) {
 
       {/* Stream Schedule */}
       {(profile.start_time || profile.end_time) && (
-        <div className="w-full">
+        <div>
           <h2 className="text-sm font-medium text-muted-foreground mb-2">Horario de Stream</h2>
           <div className="flex items-center space-x-3 bg-muted/50 p-4 rounded-lg">
             <Clock className="text-muted-foreground" size={20} />
@@ -106,23 +89,9 @@ export function ProfileView({ profile, onEdit, onLogout }: ProfileViewProps) {
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex justify-between w-full pt-4 gap-4">
-        <Button 
-          variant="outline" 
-          onClick={onLogout} 
-          className="flex-1 gap-2"
-        >
-          <LogOut size={16} />
-          Cerrar sesión
-        </Button>
-        <Button 
-          onClick={onEdit}
-          className="flex-1 gap-2"
-        >
-          <Edit size={16} />
-          Editar perfil
-        </Button>
+      <div className="flex justify-between pt-4">
+        <Button variant="outline" onClick={onLogout}>Cerrar sesión</Button>
+        <Button onClick={onEdit}>Editar perfil</Button>
       </div>
     </div>
   );
